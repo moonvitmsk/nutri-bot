@@ -1,0 +1,48 @@
+{
+  "food_photos": [
+    { "id": "borsch", "description": "Борщ с говядиной и сметаной, тарелка 250мл", "expected": {"calories": [170, 210], "protein": [8, 12], "fat": [6, 10], "carbs": [18, 24]}, "prompt_context": "Тарелка борща со сметаной" },
+    { "id": "business_lunch", "description": "Бизнес-ланч: суп + котлета с пюре + салат + компот", "expected": {"calories": [650, 850]}, "prompt_context": "Стандартный бизнес-ланч из 4 блюд" },
+    { "id": "olivie", "description": "Оливье 200г", "expected": {"calories": [250, 310], "protein": [7, 10], "fat": [18, 24], "carbs": [15, 22]}, "prompt_context": "Порция оливье в тарелке" },
+    { "id": "buckwheat_cutlet", "description": "Гречка с куриной котлетой", "expected": {"calories": [350, 450], "protein": [22, 30], "fat": [10, 16], "carbs": [30, 45]}, "prompt_context": "Тарелка гречки с котлетой" },
+    { "id": "shaurma", "description": "Шаурма куриная", "expected": {"calories": [450, 600], "protein": [18, 28], "fat": [22, 35], "carbs": [40, 55]}, "prompt_context": "Куриная шаурма в лаваше" },
+    { "id": "bliny", "description": "Блины со сметаной 3 штуки", "expected": {"calories": [300, 420], "protein": [7, 12], "fat": [12, 18], "carbs": [40, 55]}, "prompt_context": "Три блина со сметаной на тарелке" },
+    { "id": "pelmeni", "description": "Пельмени 250г с маслом", "expected": {"calories": [400, 520], "protein": [16, 22], "fat": [15, 22], "carbs": [45, 60]}, "prompt_context": "Тарелка пельменей" },
+    { "id": "caesar_salad", "description": "Салат Цезарь с курицей", "expected": {"calories": [300, 400], "protein": [20, 28], "fat": [18, 26], "carbs": [10, 18]}, "prompt_context": "Салат Цезарь с курицей" },
+    { "id": "oatmeal", "description": "Овсянка на молоке с бананом", "expected": {"calories": [300, 400], "protein": [8, 14], "fat": [6, 12], "carbs": [50, 65]}, "prompt_context": "Овсянка с бананом в миске" },
+    { "id": "cappuccino", "description": "Капучино 300мл", "expected": {"calories": [100, 160], "protein": [5, 8], "fat": [4, 8], "carbs": [8, 14]}, "prompt_context": "Чашка капучино" },
+    { "id": "schi", "description": "Щи из свежей капусты", "expected": {"calories": [80, 140], "protein": [4, 8], "fat": [3, 7], "carbs": [8, 15]}, "prompt_context": "Тарелка щей" },
+    { "id": "chicken_breast_rice", "description": "Куриная грудка с рисом", "expected": {"calories": [380, 480], "protein": [30, 40], "fat": [4, 10], "carbs": [45, 60]}, "prompt_context": "Куриная грудка с белым рисом" },
+    { "id": "pizza_slice", "description": "Кусок пиццы Маргарита", "expected": {"calories": [220, 320], "protein": [8, 14], "fat": [8, 14], "carbs": [25, 38]}, "prompt_context": "Один кусок пиццы" },
+    { "id": "tvorog_honey", "description": "Творог 200г с мёдом", "expected": {"calories": [250, 350], "protein": [28, 36], "fat": [5, 12], "carbs": [20, 30]}, "prompt_context": "Творог с мёдом в миске" },
+    { "id": "sushi_set", "description": "Набор роллов 8 штук", "expected": {"calories": [400, 600], "protein": [15, 25], "fat": [8, 18], "carbs": [55, 80]}, "prompt_context": "Набор из 8 роллов на подносе" },
+    { "id": "syrniki", "description": "Сырники 4 штуки со сметаной", "expected": {"calories": [350, 480], "protein": [18, 28], "fat": [12, 22], "carbs": [30, 45]}, "prompt_context": "Четыре сырника со сметаной" },
+    { "id": "vinegret", "description": "Винегрет 200г", "expected": {"calories": [100, 160], "protein": [2, 5], "fat": [5, 10], "carbs": [12, 20]}, "prompt_context": "Порция винегрета" },
+    { "id": "kompot_bread", "description": "Хлеб чёрный 2 куска + компот", "expected": {"calories": [200, 300], "protein": [4, 8], "fat": [1, 4], "carbs": [45, 65]}, "prompt_context": "Два куска чёрного хлеба и стакан компота" },
+    { "id": "black_coffee", "description": "Чёрный кофе без сахара", "expected": {"calories": [0, 5]}, "prompt_context": "Чашка чёрного кофе" },
+    { "id": "sandwich_cheese", "description": "Бутерброд с сыром и маслом", "expected": {"calories": [250, 350], "protein": [8, 14], "fat": [14, 22], "carbs": [20, 30]}, "prompt_context": "Бутерброд с сыром" }
+  ],
+  "chat_queries": [
+    { "id": "vitamin_d_question", "message": "Мне не хватает витамина Д, что делать?", "expected_contains": ["солнце", "рыб", "добавк"], "expected_not_contains": ["диагноз", "болезн"] },
+    { "id": "weight_loss", "message": "Хочу похудеть, с чего начать?", "expected_contains": ["дефицит", "калори", "бел"], "expected_not_contains": ["голодан"] },
+    { "id": "iron_deficiency", "message": "У меня низкий гемоглобин, что есть?", "expected_contains": ["мяс", "гречк", "железо"], "expected_not_contains": ["диагноз"] },
+    { "id": "protein_question", "message": "Сколько белка мне нужно?", "expected_contains": ["грамм", "кг"], "expected_not_contains": [] },
+    { "id": "cheap_food", "message": "Как питаться правильно и дёшево?", "expected_contains": ["гречк", "яйц", "овощ"], "expected_not_contains": [] },
+    { "id": "sleep_food", "message": "Что съесть перед сном?", "expected_contains": ["творог", "кефир"], "expected_not_contains": ["голодан"] },
+    { "id": "hangover", "message": "Что есть после вечеринки?", "expected_contains": ["вод", "бульон"], "expected_not_contains": [] },
+    { "id": "energy_boost", "message": "Постоянная усталость, что с питанием?", "expected_contains": ["B12", "желез"], "expected_not_contains": ["диагноз"] },
+    { "id": "vegan_protein", "message": "Я вегетарианец, где брать белок?", "expected_contains": ["чечевиц", "бобов", "тофу"], "expected_not_contains": [] },
+    { "id": "child_nutrition", "message": "Как кормить ребёнка 7 лет?", "expected_contains": ["овощ", "молочн"], "expected_not_contains": ["диет", "похуде"] },
+    { "id": "moonvit_question", "message": "Какие витамины moonvit есть?", "expected_contains": ["Moonvit", "витамин"], "expected_not_contains": [] },
+    { "id": "allergy_question", "message": "У меня аллергия на молоко, чем заменить?", "expected_contains": ["кальций", "миндал", "кунжут"], "expected_not_contains": [] },
+    { "id": "sports_nutrition", "message": "Тренируюсь 5 раз в неделю, что есть?", "expected_contains": ["белок", "углевод"], "expected_not_contains": [] },
+    { "id": "stomach_issues", "message": "Болит живот после еды", "expected_contains": ["врач"], "expected_not_contains": ["диагноз"] },
+    { "id": "supplement_timing", "message": "Когда лучше принимать витамины?", "expected_contains": ["утр", "ед"], "expected_not_contains": [] }
+  ],
+  "supplement_labels": [
+    { "id": "moonvit_luna", "description": "Этикетка moonvit Луна (Сон и расслабление)", "expected_nutrients": ["мелатонин", "глицин", "витамин B6", "5-HTP"] },
+    { "id": "moonvit_energy", "description": "Этикетка moonvit Энергия и иммунитет", "expected_nutrients": ["витамин D", "витамин E", "витамин B12", "PQQ"] },
+    { "id": "generic_multivitamin", "description": "Обычный мультивитамин из аптеки", "expected_nutrients": ["витамин A", "витамин C", "витамин D", "железо"] },
+    { "id": "omega3_capsules", "description": "Капсулы Омега-3 рыбий жир", "expected_nutrients": ["омега-3", "EPA", "DHA"] },
+    { "id": "magnesium_b6", "description": "Магний B6 таблетки", "expected_nutrients": ["магний", "витамин B6"] }
+  ]
+}

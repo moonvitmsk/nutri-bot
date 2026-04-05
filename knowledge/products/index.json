@@ -1,0 +1,8 @@
+[
+  {"slug": "mens-multi", "name": "Moonvit Мужской мультивитамин", "key_ingredients": ["Цинк 25мг", "Селен 100мкг", "Витамин D3 2000МЕ", "B-комплекс"]},
+  {"slug": "sleep-relax", "name": "Moonvit Сон и Спокойствие", "key_ingredients": ["Мелатонин 3мг", "Магний 200мг", "L-теанин 100мг", "Глицин 300мг"]},
+  {"slug": "energy-immunity", "name": "Moonvit Энергия и Иммунитет", "key_ingredients": ["Витамин C 500мг", "D3 2000МЕ", "PQQ 10мг", "CoQ10 50мг"]},
+  {"slug": "womens-multi", "name": "Moonvit Женский мультивитамин", "key_ingredients": ["Фолат 400мкг", "Железо 14мг", "Биотин 150мкг", "Инозитол 500мг"]},
+  {"slug": "hair-skin-nails", "name": "Moonvit Волосы Кожа Ногти", "key_ingredients": ["Коллаген 5000мг", "МСМ 500мг", "Биотин 150мкг", "Витамин E 30мг"]},
+  {"slug": "collagen-biotin", "name": "Moonvit Коллаген + Биотин", "key_ingredients": ["Коллаген 5000мг", "Биотин 150мкг", "Витамин C 250мг", "Гиалуронка 50мг"]}
+]

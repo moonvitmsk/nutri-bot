@@ -1,0 +1,6 @@
+INSERT INTO nutri_settings (key, value, description) VALUES
+('prompt_greeting_ai', 'Сгенерируй уникальное короткое приветствие (3-4 предложения) для AI-бота-нутрициолога. Стиль: робот Бендер + Артемий Лебедев. Тон: дерзкий, с юмором, но дружелюбный. Главный призыв: отправить фото любой еды или настроить профиль. Не повторяйся. Не используй мат. Бот называется NutriBot от Moonvit. Ответ — только текст приветствия.', 'AI промпт для генерации приветствий'),
+('config_morning_time', '09:00', NULL),
+('ai_model_quality', 'gpt-5.4-mini', 'Модель для оценки качества ответов'),
+('bot_menu_config', '[{"text":"📸 Фото еды","payload":"action_food"},{"text":"🍽 Меню ресторана","payload":"action_restaurant"},{"text":"📊 Дневник","payload":"action_today"},{"text":"📈 Неделя","payload":"action_week"},{"text":"💧 Вода","payload":"action_water"},{"text":"💊 Витамины","payload":"action_vitamins"},{"text":"🍳 Рецепты","payload":"action_recipes"},{"text":"📋 План питания","payload":"action_mealplan"},{"text":"🔬 Deepcheck","payload":"action_deep"},{"text":"🧪 Анализы","payload":"action_lab"},{"text":"👤 Профиль","payload":"action_profile"},{"text":"⚙️ Ещё","payload":"action_more"}]', 'Конфигурация меню бота (JSON). Каждая кнопка: text + payload')
+ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, description = EXCLUDED.description;

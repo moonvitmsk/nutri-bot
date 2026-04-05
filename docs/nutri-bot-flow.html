@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NutriBot — Полная схема логики</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0a0a1e;
+    color: #e0e0f0;
+    min-height: 100vh;
+  }
+  .header {
+    background: linear-gradient(135deg, #141432, #1a1a40);
+    padding: 24px 32px;
+    border-bottom: 1px solid #333366;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .header h1 { font-size: 24px; font-weight: 700; color: #fff; }
+  .header span { color: #b366ff; font-size: 14px; }
+  .tabs {
+    display: flex; gap: 0; background: #141432;
+    border-bottom: 1px solid #333366;
+    padding: 0 32px;
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 12px 24px; cursor: pointer;
+    color: #8888aa; font-size: 14px; font-weight: 500;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap; transition: all .2s;
+  }
+  .tab:hover { color: #ccc; }
+  .tab.active { color: #b366ff; border-bottom-color: #b366ff; }
+  .diagram-container {
+    padding: 32px;
+    overflow: auto;
+    max-height: calc(100vh - 130px);
+  }
+  .diagram-section { display: none; }
+  .diagram-section.active { display: block; }
+  .mermaid {
+    background: #12122a;
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid #222244;
+  }
+  .legend {
+    margin-top: 24px; padding: 16px 24px;
+    background: #12122a; border-radius: 12px;
+    border: 1px solid #222244;
+  }
+  .legend h3 { color: #b366ff; margin-bottom: 12px; font-size: 16px; }
+  .legend-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: #8888aa;
+  }
+  .legend-dot {
+    width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+  }
+  .fixes-table {
+    width: 100%; border-collapse: collapse; margin-top: 16px;
+  }
+  .fixes-table th, .fixes-table td {
+    padding: 8px 12px; text-align: left;
+    border-bottom: 1px solid #222244;
+    font-size: 13px;
+  }
+  .fixes-table th { color: #b366ff; font-weight: 600; }
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 11px; font-weight: 600;
+  }
+  .badge.crit { background: #ff3b5022; color: #ff3b50; }
+  .badge.high { background: #ff950022; color: #ff9500; }
+  .badge.med { background: #00d4ff22; color: #00d4ff; }
+  .badge.low { background: #00ff8822; color: #00ff88; }
+  .badge.fixed { background: #00ff8822; color: #00ff88; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>NutriBot by Moonvit</h1>
+  <span>Полная схема логики бота • v2.4</span>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('main')">Главный роутер</div>
+  <div class="tab" onclick="showTab('onboarding')">Онбординг</div>
+  <div class="tab" onclick="showTab('food')">Фото еды</div>
+  <div class="tab" onclick="showTab('menu')">Меню и кнопки</div>
+  <div class="tab" onclick="showTab('states')">Состояния</div>
+  <div class="tab" onclick="showTab('subscription')">Подписки</div>
+  <div class="tab" onclick="showTab('visual')">Визуальный контент</div>
+  <div class="tab" onclick="showTab('fixes')">Фиксы (14)</div>
+</div>
+
+<div class="diagram-container">
+
+<!-- TAB 1: Main Router -->
+<div class="diagram-section active" id="tab-main">
+<div class="mermaid">
+flowchart TD
+    classDef entry fill:#b366ff22,stroke:#b366ff,color:#fff
+    classDef action fill:#00d4ff22,stroke:#00d4ff,color:#fff
+    classDef check fill:#ff950022,stroke:#ff9500,color:#fff
+    classDef handler fill:#00ff8822,stroke:#00ff88,color:#fff
+    classDef error fill:#ff3b5022,stroke:#ff3b50,color:#fff
+
+    WH["⚡ Webhook POST /api/webhook"]:::entry
+    WH --> VAL{"Валидация\nupdate_type?"}
+    VAL -->|"invalid"| SKIP["200 OK\n(no updates)"]
+    VAL -->|"valid"| IDEM{"Дубликат?\n(idempotency)"}
+    IDEM -->|"да"| SKIP2["Skip"]
+    IDEM -->|"нет"| RATE{"Rate limit?\n30/min/user"}
+    RATE -->|"да"| SKIP3["Skip"]
+    RATE -->|"нет"| TYPE{"update_type"}
+
+    TYPE -->|"bot_started"| BS["🟢 bot_started\nСоздать юзера\n→ /start"]:::entry
+    TYPE -->|"message_callback"| CB["🔵 Callback\nИнлайн-кнопка"]:::action
+    TYPE -->|"message_created"| MSG["💬 Сообщение"]:::action
+
+    MSG --> CONTACT{"📱 Контакт?"}
+    CONTACT -->|"да, step=0"| PHONE["handlePhoneFirst\n→ trial 30 дней"]:::handler
+    CONTACT -->|"да, completed"| TRIAL["activateTrial\n→ trial upgrade"]:::handler
+    CONTACT -->|"нет"| AUDIO{"🎤 Аудио?"}
+
+    AUDIO -->|"да"| VOICE["handleVoice\nWhisper→текст→AI"]:::handler
+    AUDIO -->|"нет"| FILE{"📎 Файл?"}
+
+    FILE -->|"изображение"| FOOD_OR_LAB{"context_state\n= awaiting_lab?"}
+    FOOD_OR_LAB -->|"да"| LAB_H["handleLabPhoto"]:::handler
+    FOOD_OR_LAB -->|"нет"| FOOD_H["handleFoodPhoto"]:::handler
+    FILE -->|"PDF"| PDF_H["handleLabDocument"]:::handler
+    FILE -->|"другое"| REJECT["Я работаю с фото\nи анализами"]:::error
+    FILE -->|"нет"| VIDEO{"🎬 Видео?"}
+
+    VIDEO -->|"да"| VID_MSG["Видео пока\nне умею"]:::error
+    VIDEO -->|"нет"| STICKER{"😀 Стикер?"}
+
+    STICKER -->|"да"| STICKER_MSG["Классный стикер,\n0 калорий"]:::error
+    STICKER -->|"нет"| SHARE{"🔗 Шара?"}
+
+    SHARE -->|"да"| SHARE_MSG["Спасибо за ссылку!\nЛучше фото еды"]:::error
+    SHARE -->|"нет"| IMAGE{"🖼 Картинка?"}
+
+    IMAGE -->|"да"| IMG_STATE{"context_state?"}
+    IMG_STATE -->|"awaiting_qr"| QR_H["handleQrPhoto"]:::handler
+    IMG_STATE -->|"awaiting_lab"| LAB_H2["handleLabPhoto"]:::handler
+    IMG_STATE -->|"awaiting_restaurant"| REST_H["handleRestaurantMenu"]:::handler
+    IMG_STATE -->|"awaiting_weight"| RESET_W["→ reset to idle\n→ handleFoodPhoto"]:::handler
+    IMG_STATE -->|"step=0, !completed"| PHONE_REQ["Сначала телефон!"]:::check
+    IMG_STATE -->|"default"| FOOD_H2["handleFoodPhoto"]:::handler
+    IMAGE -->|"нет"| TEXT{"📝 Текст?"}
+
+    TEXT -->|"пустой"| IGNORE["return"]
+    TEXT -->|"/команда"| CMD["handleCommand"]:::action
+    TEXT -->|"awaiting_weight"| WEIGHT["handleWeightCorrection"]:::handler
+    TEXT -->|"editing_*"| EDIT["handleProfileEdit"]:::handler
+    TEXT -->|"!onboarding"| ONB["handleOnboardingStep"]:::check
+    TEXT -->|"intent match"| INTENT["Intent → команда"]:::action
+    TEXT -->|"default"| CHAT["handleChat\n→ AI ответ"]:::handler
+</div>
+
+<div class="legend">
+  <h3>Легенда</h3>
+  <div class="legend-grid">
+    <div class="legend-item"><div class="legend-dot" style="background:#b366ff"></div> Точки входа (webhook, bot_started)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#00d4ff"></div> Роутинг / маршрутизация</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#00ff88"></div> Обработчики (handlers)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ff9500"></div> Проверки / условия</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ff3b50"></div> Отказы / ошибки</div>
+  </div>
+</div>
+</div>
+
+<!-- TAB 2: Onboarding -->
+<div class="diagram-section" id="tab-onboarding">
+<div class="mermaid">
+flowchart TD
+    classDef step fill:#b366ff22,stroke:#b366ff,color:#fff
+    classDef choice fill:#ff950022,stroke:#ff9500,color:#fff
+    classDef done fill:#00ff8822,stroke:#00ff88,color:#fff
+
+    START["/start или bot_started"]:::step
+    START --> CHECK{"onboarding_completed?"}
+    CHECK -->|"да"| WELCOME["С возвращением!\n+ mainMenu"]:::done
+    CHECK -->|"нет"| GREET["AI-приветствие\n+ кнопка Поделиться телефоном"]:::step
+
+    GREET --> STEP0["Step 0: Ждём телефон"]:::step
+    STEP0 -->|"📱 контакт"| PHONE["handlePhoneFirst\nтелефон сохранён\ntrial активирован"]:::step
+    STEP0 -->|"текст"| REPEAT["Нажми кнопку\nтелефона"]
+    STEP0 -->|"фото"| REPEAT2["Круто! Но сначала\nтелефон"]
+
+    PHONE --> CHOICE{"Пользователь\nвыбирает"}:::choice
+    CHOICE -->|"📸 Скинуть фото"| ACTION_FOOD["action_food\n→ auto-complete onboarding\n→ ждём фото"]:::done
+    CHOICE -->|"⚙️ Настроить профиль"| PROFILE_MODE{"Режим профиля"}:::choice
+
+    PROFILE_MODE -->|"Подробный"| FULL["Step 1: Имя\nStep 2: Пол 🔘\nStep 3: Дата рождения\nStep 4: Рост\nStep 5: Вес\nStep 6: Цель 🔘"]:::step
+    PROFILE_MODE -->|"Быстрый"| SHORT["Step 2: Пол 🔘\nStep 3: Возраст\nStep 6: Цель 🔘\n(пропуск роста/веса)"]:::step
+    PROFILE_MODE -->|"Просто тест"| SKIP["Дефолты:\n30 лет, 170/70, maintain\n→ сразу готово"]:::done
+
+    FULL --> FINISH["finishOnboarding\ncalculateMacros\n→ mainMenu"]:::done
+    SHORT --> FINISH
+
+    subgraph "Ввод пола (Step 2)"
+        SEX_INPUT["Кнопки: 👨 М / 👩 Ж\nТекст: м/ж/муж/жен/мужской/\nженский/мужчина/женщина"]
+    end
+
+    subgraph "Ввод цели (Step 6)"
+        GOAL_INPUT["Кнопки:\n📉 Похудеть\n⚖️ Поддержать\n📈 Набрать"]
+    end
+</div>
+</div>
+
+<!-- TAB 3: Food Photo Flow -->
+<div class="diagram-section" id="tab-food">
+<div class="mermaid">
+flowchart TD
+    classDef action fill:#00d4ff22,stroke:#00d4ff,color:#fff
+    classDef ai fill:#b366ff22,stroke:#b366ff,color:#fff
+    classDef save fill:#00ff8822,stroke:#00ff88,color:#fff
+    classDef error fill:#ff3b5022,stroke:#ff3b50,color:#fff
+
+    PHOTO["📸 Фото еды получено"]:::action
+    PHOTO --> FEAT{"canUseFeature\n('photo')?"}
+
+    FEAT -->|"free, лимит"| NEED_PHONE{"needsPhoneSharing?"}
+    NEED_PHONE -->|"да"| SHARE_PHONE["Поделись телефоном\n→ sendContactRequest"]:::error
+    NEED_PHONE -->|"нет"| LOCKED["featureLocked\n('photo_limit')"]:::error
+
+    FEAT -->|"ok"| ANALYZE["Анализирую фото...\n→ Vision API"]:::ai
+    ANALYZE --> DELETE_OLD["deleteUnconfirmedLogs\n(очистить старые)"]:::action
+    DELETE_OLD --> PARSE{"JSON парсинг\nответа AI"}
+
+    PARSE -->|"ok"| RESULT["Распознано:\n- Борщ (~300г): 215 ккал\n- Хлеб (~50г): 120 ккал\nИтого: 335 ккал"]:::save
+    PARSE -->|"ошибка"| FALLBACK["items: []\ncomment: raw text"]:::error
+
+    RESULT --> SAVE_LOG["saveFoodLog\n(confirmed: false)"]:::save
+    SAVE_LOG --> INC["photos_today++\nfree_analyses_used++"]
+    INC --> REMAINING{"free user?\nосталось <= 5?"}
+    REMAINING -->|"да"| SHOW_COUNT["Осталось N из 10"]
+    REMAINING -->|"нет"| BUTTONS
+
+    SHOW_COUNT --> BUTTONS["Кнопки:\n✅ Сохранить\n⚖️ Изменить вес\n❌ Отмена"]:::action
+
+    BUTTONS -->|"✅ Сохранить"| CONFIRM["confirmFoodLog\nupdateStreak\n→ smartReplies"]:::save
+    BUTTONS -->|"⚖️ Изменить вес"| WEIGHT_MODE["context_state =\nawaiting_weight_correction"]:::action
+    BUTTONS -->|"❌ Отмена"| CANCEL["Отменено\n→ mainMenu"]
+
+    WEIGHT_MODE --> WEIGHT_INPUT{"Ввод веса"}
+    WEIGHT_INPUT -->|"300"| RECALC["Пропорциональный\nпересчёт КБЖУ"]:::ai
+    WEIGHT_INPUT -->|"1=300 2=150"| RECALC
+    WEIGHT_INPUT -->|"новое фото"| RESET_STATE["Reset state → idle\n→ handleFoodPhoto"]:::action
+    RECALC --> BUTTONS2["✅ Сохранить\n⚖️ Изменить вес\n❌ Отмена"]:::action
+
+    CONFIRM --> STREAK{"streak milestone?"}
+    STREAK -->|"3/7/14/30 дней"| STREAK_MSG["🔥 N дней подряд!"]:::save
+    STREAK -->|"нет"| DONE["Записано в дневник!\n→ smartRepliesAfterFood"]:::save
+</div>
+</div>
+
+<!-- TAB 4: Menu Structure -->
+<div class="diagram-section" id="tab-menu">
+<div class="mermaid">
+flowchart TD
+    classDef main fill:#b366ff22,stroke:#b366ff,color:#fff
+    classDef sub fill:#00d4ff22,stroke:#00d4ff,color:#fff
+    classDef cmd fill:#00ff8822,stroke:#00ff88,color:#fff
+
+    MENU["📋 Меню\n(добавляется к каждому\nсообщению)"]:::main
+    MENU --> MAIN["Главное меню\n(12 кнопок, 6 рядов)"]:::main
+
+    MAIN --> R1["📸 Фото еды | 🍽 Меню ресторана"]:::sub
+    MAIN --> R2["📊 Дневник | 📈 Неделя"]:::sub
+    MAIN --> R3["💧 Вода | 💊 Витамины"]:::sub
+    MAIN --> R4["🍳 Рецепты | 📋 План питания"]:::sub
+    MAIN --> R5["🔬 Deepcheck | 🧪 Анализы"]:::sub
+    MAIN --> R6["👤 Профиль | ⚙️ Ещё"]:::sub
+
+    R1 -->|"📸"| F1["action_food → ждём фото"]:::cmd
+    R1 -->|"🍽"| F2["action_restaurant\n→ awaiting_restaurant_menu\n→ ждём фото меню"]:::cmd
+
+    R2 -->|"📊"| F3["/today → дневник + GIF"]:::cmd
+    R2 -->|"📈"| F4["/week → статистика"]:::cmd
+
+    R3 -->|"💧"| F5["/water → стакан +1"]:::cmd
+    R3 -->|"💊"| F6["/vitamins → баланс"]:::cmd
+
+    R4 -->|"🍳"| F7["/recipes → AI рецепты"]:::cmd
+    R4 -->|"📋"| F8["/mealplan → план"]:::cmd
+
+    R5 -->|"🔬"| F9["action_deep → 4 AI-агента\n20-30 сек"]:::cmd
+    R5 -->|"🧪"| F10["action_lab\n→ awaiting_lab\n→ ждём фото"]:::cmd
+
+    R6 -->|"👤"| F11["/profile → данные"]:::cmd
+    R6 -->|"⚙️"| MORE["Подменю Ещё"]:::main
+
+    MORE --> M1["💳 Подписка | 🎁 Промокод"]:::sub
+    MORE --> M2["🚫 Аллергии | 👥 Пригласить"]:::sub
+    MORE --> M3["🔔 Напоминания | 📱 QR-код"]:::sub
+    MORE --> M4["📊 Статистика | ❓ Помощь"]:::sub
+    MORE --> M5["◀️ Назад"]:::sub
+
+    M1 -->|"💳"| S1["/subscribe → тарифы"]:::cmd
+    M1 -->|"🎁"| S2["Введи /promo КОД"]:::cmd
+    M2 -->|"🚫"| S3["/allergy → управление"]:::cmd
+    M2 -->|"👥"| S4["/invite → реф. ссылка"]:::cmd
+    M3 -->|"🔔"| S5["/reminders → toggles"]:::cmd
+    M3 -->|"📱"| S6["awaiting_qr\n→ ждём фото QR"]:::cmd
+    M4 -->|"📊"| S7["/stats → всё время"]:::cmd
+    M4 -->|"❓"| S8["/help → команды"]:::cmd
+    M5 -->|"◀️"| MENU
+
+    subgraph "Smart Replies (после сохранения еды)"
+        SR["📊 Итог дня | 🍳 Рецепт\n💧 Выпить воды | 📋 План"]
+    end
+
+    subgraph "Редактирование профиля /editprofile"
+        EP["📝 Имя | 👤 Пол\n🎂 Возраст | 📏 Рост\n⚖️ Вес | 🎯 Цель"]
+    end
+</div>
+</div>
+
+<!-- TAB 5: State Machine -->
+<div class="diagram-section" id="tab-states">
+<div class="mermaid">
+stateDiagram-v2
+    [*] --> idle : onboarding завершён
+
+    idle --> awaiting_qr : action_qr / "QR-код"
+    idle --> awaiting_lab : action_lab / /lab
+    idle --> awaiting_restaurant_menu : action_restaurant
+    idle --> awaiting_weight_correction : edit_weight_food
+    idle --> awaiting_deepcheck : /deepcheck (fixed)
+    idle --> editing_name : edit_name
+    idle --> editing_sex : edit_sex
+    idle --> editing_birth : edit_birth
+    idle --> editing_height : edit_height
+    idle --> editing_weight : edit_weight
+    idle --> editing_goal : edit_goal
+
+    awaiting_qr --> idle : фото QR обработано
+    awaiting_lab --> idle : фото анализов обработано
+    awaiting_restaurant_menu --> idle : фото меню обработано
+    awaiting_restaurant_menu --> idle : cancel_food (отмена)
+    awaiting_weight_correction --> idle : вес введён текстом
+    awaiting_weight_correction --> idle : новое фото (auto-reset)
+    awaiting_deepcheck --> idle : консультация завершена
+
+    editing_name --> idle : имя введено
+    editing_sex --> idle : пол выбран кнопкой
+    editing_birth --> idle : дата/возраст введены
+    editing_height --> idle : рост введён
+    editing_weight --> idle : вес введён
+    editing_goal --> idle : цель выбрана кнопкой
+
+    state "Онбординг" as onb {
+        [*] --> step0_phone : /start
+        step0_phone --> step1_name : телефон получен
+        step1_name --> step2_sex : имя введено
+        step2_sex --> step3_age : пол выбран
+        step3_age --> step4_height : возраст введён
+        step4_height --> step5_weight : рост введён
+        step5_weight --> step6_goal : вес введён
+        step6_goal --> [*] : цель выбрана → finishOnboarding
+
+        step1_name --> step2_sex : profile_short (skip name)
+        step3_age --> step6_goal : short mode (skip h/w)
+    }
+
+    note right of idle
+        Каждое сообщение бота
+        содержит кнопку 📋 Меню
+        для возврата в главное меню
+    end note
+</div>
+</div>
+
+<!-- TAB 6: Subscription -->
+<div class="diagram-section" id="tab-subscription">
+<div class="mermaid">
+flowchart TD
+    classDef free fill:#ff3b5022,stroke:#ff3b50,color:#fff
+    classDef trial fill:#ff950022,stroke:#ff9500,color:#fff
+    classDef premium fill:#00ff8822,stroke:#00ff88,color:#fff
+
+    USER["Новый пользователь"]
+    USER --> FREE["FREE\n10 фото-анализов\n10 сообщений/день\n❌ Анализы крови\n❌ Deepcheck"]:::free
+
+    FREE -->|"шаринг телефона"| TRIAL["TRIAL (30 дней)\n3 фото/день\n∞ сообщений\n✅ Анализы крови\n✅ Deepcheck"]:::trial
+
+    FREE -->|"QR-код Moonvit"| PREMIUM["PREMIUM (30 дней)\n20 фото/день\n∞ сообщений\n✅ Анализы крови\n✅ Deepcheck"]:::premium
+
+    TRIAL -->|"QR-код"| PREMIUM
+    TRIAL -->|"промо-код"| PREMIUM
+    TRIAL -->|"30 дней истекло"| FREE2["FREE\n(free_analyses_used\nсохранён)"]:::free
+
+    PREMIUM -->|"истёк"| FREE3["FREE"]:::free
+
+    FREE -->|"10 фото исчерп."| BLOCKED["⛔ Нужен телефон\nдля продолжения"]:::free
+    BLOCKED -->|"шаринг"| TRIAL
+
+    subgraph "Проверка canUseFeature()"
+        CHK_PHOTO["photo:\nfree → free_analyses < 10\ntrial → photos_today < 3\npremium → photos_today < 20"]
+        CHK_CHAT["chat:\nfree → messages_today < 10\ntrial/premium → ∞"]
+        CHK_LAB["lab:\ntrial/premium only"]
+        CHK_DEEP["deepcheck:\ntrial/premium only"]
+    end
+
+    subgraph "Ежедневный сброс (cron-reset)"
+        RESET["00:00 UTC:\nmessages_today → 0\nphotos_today → 0\nwater_glasses → 0"]
+    end
+</div>
+</div>
+
+<!-- TAB 8: Visual Content -->
+<div class="diagram-section" id="tab-visual">
+<div class="mermaid">
+flowchart TD
+    classDef gen fill:#b366ff22,stroke:#b366ff,color:#fff
+    classDef send fill:#00d4ff22,stroke:#00d4ff,color:#fff
+    classDef card fill:#00ff8822,stroke:#00ff88,color:#fff
+
+    subgraph "Welcome Card (onboarding)"
+        WC1["bot_started / /start"]:::gen
+        WC1 --> WC2["generateWelcomeCardPng\n800x520 PNG\nДарк-тема, фичи бота"]:::card
+        WC2 --> WC3["uploadImage → MAX"]:::send
+        WC3 --> WC4["sendMessageWithImage\n+ AI-приветствие"]:::send
+        WC4 --> WC5["sendContactRequest\n(отдельное сообщение)"]:::send
+        WC2 -.->|"ошибка"| WC6["fallback: текст"]:::send
+    end
+
+    subgraph "Recipe Card (рецепты)"
+        RC1["/recipes или кнопка 🍳"]:::gen
+        RC1 --> RC2["AI → RECIPE_JSON_PROMPT\n3 рецепта в JSON"]:::gen
+        RC2 --> RC3["generateRecipeCardPng\n800x900 PNG\nИнгредиенты + шаги + КБЖУ"]:::card
+        RC3 --> RC4["uploadImage → MAX"]:::send
+        RC4 --> RC5["sendMessageWithImage\nИнфографика рецепта #1"]:::send
+        RC5 --> RC6["sendMessage\nТекст всех 3 рецептов\n(для копирования)"]:::send
+        RC3 -.->|"ошибка"| RC7["fallback: только текст"]:::send
+    end
+
+    subgraph "Daily Report GIF (/today)"
+        DR1["/today или вечерний итог"]:::gen
+        DR1 --> DR2["generateReportGif\n800x520 animated GIF\n24 кадра + 8 hold"]:::card
+        DR2 --> DR3["uploadImage → MAX"]:::send
+        DR3 --> DR4["sendMessageWithImage\nАнимация прогресса КБЖУ"]:::send
+        DR2 -.->|"ошибка"| DR5["fallback: текст"]:::send
+    end
+
+    subgraph "Broadcast с картинкой"
+        BC1["cron-broadcast\n?image_url=URL"]:::gen
+        BC1 --> BC2["downloadImage(URL)"]:::send
+        BC2 --> BC3["uploadImage → MAX"]:::send
+        BC3 --> BC4["sendMessageWithImage\nТекст + картинка\nвсем подписчикам"]:::send
+        BC1 -.->|"без image_url"| BC5["sendMessage\nТолько текст"]:::send
+    end
+</div>
+
+<div class="legend">
+  <h3>Визуальный контент NutriBot</h3>
+  <div class="legend-grid">
+    <div class="legend-item"><div class="legend-dot" style="background:#b366ff"></div> Генерация (AI / SVG renderer)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#00ff88"></div> Карточки (sharp SVG→PNG/GIF)</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#00d4ff"></div> Отправка (MAX API)</div>
+  </div>
+  <p style="margin-top:12px;font-size:13px;color:#8888aa">
+    Все карточки: тёмная тема, неоновые акценты, кириллица (DejaVu Sans).<br>
+    Ошибки генерации не блокируют — всегда есть текстовый fallback.
+  </p>
+</div>
+</div>
+
+<!-- TAB 7: Fixes -->
+<div class="diagram-section" id="tab-fixes">
+<div style="padding: 8px;">
+<h2 style="color: #b366ff; margin-bottom: 16px;">14 фиксов — все применены ✅</h2>
+<table class="fixes-table">
+<thead>
+<tr><th>#</th><th>Severity</th><th>Проблема</th><th>Файл</th><th>Что исправлено</th><th>Статус</th></tr>
+</thead>
+<tbody>
+<tr>
+  <td>1</td>
+  <td><span class="badge crit">CRIT</span></td>
+  <td>/deepcheck не запускал консультацию</td>
+  <td>commands.ts</td>
+  <td>Добавлен вызов handleDeepConsult()</td>
+  <td><span class="badge fixed">✅ Fixed</span></td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><span class="badge crit">CRIT</span></td>
+  <td>Редактирование пола ломало onboarding_step</td>
+  <td>onboarding.ts</td>
+  <td>editing_sex проверяется ДО общего sex_ хендлера</td>
+  <td><span class="badge fixed">✅ Fixed</span></td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><span class="badge crit">CRIT</span></td>
+  <td>/editprofile возвращал "Неизвестная команда"</td>
+  <td>commands.ts</td>
+  <td>Добавлен полный case /editprofile с кнопками</td>
+  <td><span class="badge fixed">✅ Fixed</span></td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><span class="badge high">HIGH</span></td>
+  <td>water_glasses никогда не сбрасывался</td>
+  <td>users.ts</td>
+  <td>Добавлен в resetDailyCounters + расширен фильтр .or()</td>
+  <td><span class="badge fixed">✅ Fixed</span></td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><span class="badge high">HIGH</span></td>
+  <td>/stats "Дней с записями" всегда 0</td>
+  <td>commands.ts</td>
+  <td>created_at добавлен в SELECT</td>
+  <td><span class="badge fixed">✅ Fixed</span></td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><span class="badge high">HIGH</span></td>
+  <td>confirm_delete: сообщение раньше удаления</td>
+  <td>callbacks.ts</td>
+  <td>Порядок: сначала delete, потом message</td>
+  <td><span class="badge fixed">✅ Fixed</span></td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><span class="badge high">HIGH</span></td>
+  <td>Текст после фото → сохранялся как имя (onboarding)</td>
+  <td>callbacks.ts</td>
+  <td>action_food авто-завершает onboarding с дефолтами</td>
+  <td><span class="badge fixed">✅ Fixed</span></td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><span class="badge med">MED</span></td>
+  <td>Множественные фото — orphaned unconfirmed logs</td>
+  <td>food-photo.ts, food-logs.ts</td>
+  <td>deleteUnconfirmedLogs() перед каждым новым анализом</td>
+  <td><span class="badge fixed">✅ Fixed</span></td>
+</tr>
+<tr>
+  <td>9</td>
+  <td><span class="badge med">MED</span></td>
+  <td>awaiting_weight_correction не сбрасывался при фото</td>
+  <td>router.ts</td>
+  <td>Auto-reset state при получении нового фото</td>
+  <td><span class="badge fixed">✅ Fixed</span></td>
+</tr>
+<tr>
+  <td>10</td>
+  <td><span class="badge med">MED</span></td>
+  <td>awaiting_restaurant_menu нельзя отменить</td>
+  <td>callbacks.ts</td>
+  <td>Добавлена кнопка ❌ Отмена + cancel_food сбрасывает state</td>
+  <td><span class="badge fixed">✅ Fixed</span></td>
+</tr>
+<tr>
+  <td>11</td>
+  <td><span class="badge med">MED</span></td>
+  <td>Trial "без ограничений" при лимите 3 фото/день</td>
+  <td>onboarding.ts, router.ts</td>
+  <td>Убрано "без ограничений" / "безлимитные"</td>
+  <td><span class="badge fixed">✅ Fixed</span></td>
+</tr>
+<tr>
+  <td>12</td>
+  <td><span class="badge med">MED</span></td>
+  <td>"женщина"/"мужчина" не распознавались</td>
+  <td>onboarding.ts</td>
+  <td>Добавлены в список допустимых значений</td>
+  <td><span class="badge fixed">✅ Fixed</span></td>
+</tr>
+<tr>
+  <td>13</td>
+  <td><span class="badge med">MED</span></td>
+  <td>Intent detector пропускал "воды/водички/попить"</td>
+  <td>intent-detector.ts</td>
+  <td>Расширены паттерны: вод[ауы], попить, пить.*вод, водичк</td>
+  <td><span class="badge fixed">✅ Fixed</span></td>
+</tr>
+<tr>
+  <td>14</td>
+  <td><span class="badge low">LOW</span></td>
+  <td>QR-код иконка 🎁 вместо 📱</td>
+  <td>keyboard.ts</td>
+  <td>Заменена на 📱</td>
+  <td><span class="badge fixed">✅ Fixed</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      darkMode: true,
+      background: '#12122a',
+      primaryColor: '#b366ff22',
+      primaryBorderColor: '#b366ff',
+      primaryTextColor: '#e0e0f0',
+      secondaryColor: '#00d4ff22',
+      secondaryBorderColor: '#00d4ff',
+      tertiaryColor: '#00ff8822',
+      lineColor: '#555577',
+      textColor: '#e0e0f0',
+      mainBkg: '#12122a',
+      nodeBorder: '#555577',
+      clusterBkg: '#1a1a3a',
+      clusterBorder: '#333366',
+      fontFamily: 'Segoe UI, system-ui, sans-serif',
+      fontSize: '14px',
+    },
+    flowchart: {
+      useMaxWidth: true,
+      htmlLabels: true,
+      curve: 'basis',
+      padding: 20,
+    },
+    stateDiagram: {
+      useMaxWidth: true,
+    },
+  });
+
+  function showTab(name) {
+    document.querySelectorAll('.diagram-section').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+</script>
+</body>
+</html>

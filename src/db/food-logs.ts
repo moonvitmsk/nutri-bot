@@ -77,6 +77,29 @@ export async function updateFoodLog(id: string, data: Partial<NutriFoodLog>) {
   return supabase.from('nutri_food_logs').update(data).eq('id', id);
 }
 
+export async function cleanupOrphanedLogs(): Promise<number> {
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await supabase
+    .from('nutri_food_logs')
+    .delete()
+    .eq('confirmed', false)
+    .lt('created_at', cutoff)
+    .select('id');
+  if (error) console.error('[cleanup] orphaned logs error:', error);
+  return data?.length || 0;
+}
+
+export async function getTodayConfirmedCount(userId: string): Promise<number> {
+  const today = new Date().toISOString().split('T')[0];
+  const { count } = await supabase
+    .from('nutri_food_logs')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('confirmed', true)
+    .gte('created_at', today);
+  return count || 0;
+}
+
 export async function getPhotosToday(userId: string): Promise<number> {
   const today = new Date().toISOString().split('T')[0];
   const { count } = await supabase

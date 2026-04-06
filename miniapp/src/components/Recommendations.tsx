@@ -18,18 +18,18 @@ function computeTips(
   norms: Record<string, { name: string; unit: string; daily: number }>,
 ): Tip[] {
   const foodSources: Record<string, { foods: string; moonvit?: string }> = {
-    vitamin_a: { foods: 'Морковь, тыква, печень, яйца', moonvit: 'Moonvit Vita' },
+    vitamin_a: { foods: 'Морковь, тыква, печень, яйца', moonvit: 'moonvit Vita' },
     vitamin_c: { foods: 'Цитрусовые, киви, болгарский перец, капуста' },
-    vitamin_d: { foods: 'Жирная рыба, яйца, грибы', moonvit: 'Moonvit Luna' },
+    vitamin_d: { foods: 'Жирная рыба, яйца, грибы', moonvit: 'moonvit Luna' },
     vitamin_e: { foods: 'Орехи, семена, авокадо, оливковое масло' },
     vitamin_b1: { foods: 'Свинина, крупы, бобовые, семечки' },
     vitamin_b2: { foods: 'Молочные продукты, яйца, миндаль' },
     vitamin_b6: { foods: 'Курица, картофель, бананы, нут' },
-    vitamin_b12: { foods: 'Мясо, рыба, яйца, молоко', moonvit: 'Moonvit B-Complex' },
+    vitamin_b12: { foods: 'Мясо, рыба, яйца, молоко', moonvit: 'moonvit B-Complex' },
     vitamin_b9: { foods: 'Листовая зелень, бобовые, цитрусовые' },
     iron: { foods: 'Красное мясо, гречка, шпинат, чечевица' },
-    calcium: { foods: 'Молочные продукты, кунжут, брокколи', moonvit: 'Moonvit Luna' },
-    magnesium: { foods: 'Тёмный шоколад, орехи, авокадо, бананы', moonvit: 'Moonvit Luna' },
+    calcium: { foods: 'Молочные продукты, кунжут, брокколи', moonvit: 'moonvit Luna' },
+    magnesium: { foods: 'Тёмный шоколад, орехи, авокадо, бананы', moonvit: 'moonvit Luna' },
     zinc: { foods: 'Устрицы, говядина, тыквенные семечки' },
     selenium: { foods: 'Бразильский орех, рыба, яйца, чеснок' },
   };
@@ -74,7 +74,7 @@ export default function Recommendations({ vitamins, norms }: Props) {
           <div
             key={tip.nutrient}
             className="vitamin-orb"
-            style={{ animationDelay: `${i * 0.05}s`, padding: '10px 12px' }}
+            style={{ padding: '10px 12px' }}
           >
             <div style={{
               width: 32, height: 32, borderRadius: 10,

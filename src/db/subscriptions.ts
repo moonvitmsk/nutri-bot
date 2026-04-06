@@ -17,8 +17,8 @@ export function getSubscriptionStatus(user: NutriUser): 'free' | 'trial' | 'prem
   return 'free';
 }
 
-// A-4: Free users get 10 photo analyses total before needing to share phone
-const FREE_PHOTO_LIMIT = 10;
+// Photo limits: 5/day free, 10/day trial, 20/day premium
+const FREE_PHOTOS_PER_DAY = 5;
 
 export function canUseFeature(user: NutriUser, feature: 'chat' | 'photo' | 'lab' | 'deepcheck'): boolean {
   const sub = getSubscriptionStatus(user);
@@ -27,7 +27,7 @@ export function canUseFeature(user: NutriUser, feature: 'chat' | 'photo' | 'lab'
       if (sub === 'free') return user.messages_today < config.limits.freeMessagesPerDay;
       return true;
     case 'photo':
-      if (sub === 'free') return ((user as any).free_analyses_used || 0) < FREE_PHOTO_LIMIT;
+      if (sub === 'free') return user.photos_today < FREE_PHOTOS_PER_DAY;
       if (sub === 'trial') return user.photos_today < config.limits.trialPhotosPerDay;
       return user.photos_today < config.limits.premiumPhotosPerDay;
     case 'lab':
@@ -37,13 +37,16 @@ export function canUseFeature(user: NutriUser, feature: 'chat' | 'photo' | 'lab'
   }
 }
 
-export function getFreeAnalysesRemaining(user: NutriUser): number {
-  return Math.max(0, FREE_PHOTO_LIMIT - ((user as any).free_analyses_used || 0));
+export function getPhotosRemaining(user: NutriUser): number {
+  const sub = getSubscriptionStatus(user);
+  if (sub === 'free') return Math.max(0, FREE_PHOTOS_PER_DAY - user.photos_today);
+  if (sub === 'trial') return Math.max(0, config.limits.trialPhotosPerDay - user.photos_today);
+  return Math.max(0, config.limits.premiumPhotosPerDay - user.photos_today);
 }
 
 export function needsPhoneSharing(user: NutriUser): boolean {
   const sub = getSubscriptionStatus(user);
-  return sub === 'free' && ((user as any).free_analyses_used || 0) >= FREE_PHOTO_LIMIT;
+  return sub === 'free' && user.photos_today >= FREE_PHOTOS_PER_DAY;
 }
 
 export async function activateQrCode(userId: string, qrCode: string): Promise<{ success: boolean; message: string }> {

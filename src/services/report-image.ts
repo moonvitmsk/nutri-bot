@@ -132,7 +132,7 @@ function renderFrame(opts: ReportOptions, animProgress: number): string {
   <text x="400" y="452" text-anchor="middle" fill="${COLORS.textMain}" font-size="16" font-weight="600" font-family="Arial,sans-serif">${calVal} / ${macros.calories.target} ккал · Б${proVal} Ж${fatVal} У${carbVal}</text>
 
   <!-- Brand -->
-  <text x="400" y="495" text-anchor="middle" fill="${COLORS.brand}" font-size="14" font-weight="600" font-family="Arial,sans-serif" opacity="0.7">NutriBot by Moonvit</text>
+  <text x="400" y="495" text-anchor="middle" fill="${COLORS.brand}" font-size="14" font-weight="600" font-family="Arial,sans-serif" opacity="0.7">Moonvit</text>
 </svg>`;
 }
 
@@ -183,4 +183,33 @@ export async function generateReportPng(opts: ReportOptions): Promise<Buffer> {
   const svg = renderFrame(opts, 1);
   const resvg = new Resvg(svg, { fitTo: { mode: 'width', value: WIDTH } });
   return Buffer.from(resvg.render().asPng());
+}
+
+/**
+ * Generates a report image: tries animated GIF first, falls back to static PNG
+ * if GIF generation fails (e.g. WASM module load failure on Vercel serverless).
+ * Returns { buffer, mimeType } so the caller knows what format was produced.
+ */
+export async function generateReport(
+  opts: ReportOptions,
+): Promise<{ buffer: Buffer; mimeType: 'image/gif' | 'image/png' }> {
+  try {
+    const buffer = await generateReportGif(opts);
+    return { buffer, mimeType: 'image/gif' };
+  } catch (err) {
+    console.error(
+      '[report-image] GIF generation failed, falling back to PNG:',
+      err instanceof Error ? err.message : err,
+    );
+    try {
+      const buffer = await generateReportPng(opts);
+      return { buffer, mimeType: 'image/png' };
+    } catch (pngErr) {
+      console.error(
+        '[report-image] PNG fallback also failed:',
+        pngErr instanceof Error ? pngErr.message : pngErr,
+      );
+      throw pngErr;
+    }
+  }
 }

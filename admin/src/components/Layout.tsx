@@ -35,7 +35,7 @@ interface Props {
 export default function Layout({ children, onLogout }: Props) {
   const [collapsed, setCollapsed] = useState(false)
   const location = useLocation()
-  const title = NAV.find((n) => n.to === location.pathname)?.label ?? 'NutriBot'
+  const title = NAV.find((n) => n.to === location.pathname)?.label ?? 'Moonvit'
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#0a0e1a]">
@@ -62,7 +62,7 @@ export default function Layout({ children, onLogout }: Props) {
               <span className="text-sm font-bold bg-gradient-to-r from-emerald-400 via-cyan-400 to-violet-400 bg-clip-text text-transparent">
                 Moonvit Admin
               </span>
-              <span className="text-[10px] text-slate-500 tracking-wider uppercase">NutriBot Control</span>
+              <span className="text-[10px] text-slate-500 tracking-wider uppercase">AI-нутрициолог</span>
             </div>
           )}
           <button

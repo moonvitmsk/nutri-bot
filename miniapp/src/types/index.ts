@@ -16,6 +16,7 @@ export interface UserProfile {
   subscription_type: 'free' | 'trial' | 'premium';
   achievements: string[];
   water_norm: number;
+  avatar_url?: string | null;
 }
 
 export interface FoodItem {
@@ -25,6 +26,8 @@ export interface FoodItem {
   protein: number;
   fat: number;
   carbs: number;
+  is_drink?: boolean;
+  volume_ml?: number | null;
 }
 
 export interface FoodLog {
@@ -71,4 +74,20 @@ export interface LabResult {
   created_at: string;
   deficiencies: string[];
   ai_interpretation: string | null;
+}
+
+export interface WeightEntry {
+  id: string;
+  weight_kg: number;
+  note: string | null;
+  created_at: string;
+}
+
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  unlocked: boolean;
+  progress?: number; // 0-100
 }

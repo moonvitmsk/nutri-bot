@@ -373,7 +373,7 @@ const BOT_MSG_GROUPS = [
       { key: 'onboarding_weight_error', label: 'Ошибка: вес', ph: 'Введи вес числом в кг (30-300):' },
       { key: 'onboarding_phone_activated', label: 'Телефон принят', ph: 'Спасибо! Пробный период активирован на 30 дней.' },
       { key: 'onboarding_phone_request', label: 'Запрос телефона', ph: 'Поделись номером телефона — активирую пробный период на 30 дней.' },
-      { key: 'onboarding_fallback_greeting', label: 'Приветствие (fallback)', ph: 'Привет! Я — NutriBot, AI-нутрициолог от Moonvit...' },
+      { key: 'onboarding_fallback_greeting', label: 'Приветствие (fallback)', ph: 'Привет! Я — Moonvit, твой AI-нутрициолог...' },
     ],
   },
   {

@@ -5,6 +5,7 @@ interface Props {
   logs: FoodLog[];
   onSelect: (log: FoodLog) => void;
   onAddFood: () => void;
+  onRepeatMeal?: (text: string) => void;
 }
 
 function groupByDate(logs: FoodLog[]): Record<string, FoodLog[]> {
@@ -28,12 +29,21 @@ function formatDate(dateStr: string): string {
 
 const mealColors = ['#FBBF24', '#F472B6', '#60A5FA', '#6EE7B7', '#A78BFA', '#F87171'];
 
-export default function FoodDiary({ logs, onSelect, onAddFood }: Props) {
+function getMealCategory(dateStr: string): string {
+  const h = new Date(dateStr).getHours();
+  if (h >= 5 && h < 11) return 'Завтрак';
+  if (h >= 11 && h < 15) return 'Обед';
+  if (h >= 15 && h < 18) return 'Перекус';
+  if (h >= 18 && h < 23) return 'Ужин';
+  return 'Перекус';
+}
+
+export default function FoodDiary({ logs, onSelect, onAddFood, onRepeatMeal, dailyTarget = 2000 }: Props & { dailyTarget?: number }) {
   if (!logs.length) {
     return (
       <div>
         <div className="card" style={{ textAlign: 'center', padding: 32 }}>
-          <div style={{ fontSize: 40, marginBottom: 12, animation: 'float 3s ease-in-out infinite' }}>🛸</div>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🛸</div>
           <div style={{ fontWeight: 600, marginBottom: 4 }}>Бортовой журнал пуст</div>
           <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 16 }}>
             Отправьте фото еды в бот или добавьте текстом
@@ -82,11 +92,19 @@ export default function FoodDiary({ logs, onSelect, onAddFood }: Props) {
               <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: 0.5 }}>
                 {formatDate(date)}
               </div>
-              <div style={{
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: 11, color: 'rgba(255,255,255,0.25)',
-              }}>
-                {dayTotal} ккал
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div className="progress-bar" style={{ width: 40, height: 3 }}>
+                  <div className="progress-fill" style={{
+                    width: `${Math.min(Math.round((dayTotal / dailyTarget) * 100), 100)}%`,
+                    background: dayTotal > dailyTarget ? 'var(--red)' : 'var(--accent-purple)',
+                  }} />
+                </div>
+                <div style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 11, color: 'rgba(255,255,255,0.25)',
+                }}>
+                  {dayTotal} ккал
+                </div>
               </div>
             </div>
 
@@ -101,7 +119,6 @@ export default function FoodDiary({ logs, onSelect, onAddFood }: Props) {
                   gap: 12,
                   alignItems: 'center',
                   padding: '12px 14px',
-                  animationDelay: `${i * 0.05}s`,
                   cursor: 'pointer',
                 }}
               >
@@ -115,10 +132,13 @@ export default function FoodDiary({ logs, onSelect, onAddFood }: Props) {
 
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
-                    fontSize: 14, fontWeight: 500, marginBottom: 4,
+                    fontSize: 14, fontWeight: 500, marginBottom: 2,
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                   }}>
                     {log.description || 'Meal'}
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginBottom: 2 }}>
+                    {getMealCategory(log.created_at)}
                   </div>
                   <div style={{ display: 'flex', gap: 8, fontSize: 11 }}>
                     <span style={{ color: 'var(--yellow)' }}>{log.calories}</span>
@@ -128,6 +148,24 @@ export default function FoodDiary({ logs, onSelect, onAddFood }: Props) {
                     <span style={{ color: 'var(--accent-blue)' }}>У{log.carbs}</span>
                   </div>
                 </div>
+
+                {/* Repeat button */}
+                {onRepeatMeal && log.description && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onRepeatMeal(log.description); }}
+                    title="Повторить"
+                    style={{
+                      width: 26, height: 26, borderRadius: 7, flexShrink: 0,
+                      background: 'rgba(124,58,237,0.06)',
+                      border: '1px solid rgba(124,58,237,0.12)',
+                      color: 'var(--accent-purple)', fontSize: 11,
+                      cursor: 'pointer', fontFamily: 'inherit',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}
+                  >
+                    ↻
+                  </button>
+                )}
 
                 {/* Has vitamins indicator */}
                 {log.micronutrients && Object.keys(log.micronutrients).length > 0 && (

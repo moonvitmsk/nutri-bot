@@ -6,6 +6,10 @@
   box-sizing: border-box;
 }
 
+html {
+  font-size: 22px; /* v0.8.5: bumped from 17→20→22px for MAX WebView readability */
+}
+
 body {
   font-family: 'Outfit', -apple-system, system-ui, sans-serif;
   background: #06060e;
@@ -13,6 +17,7 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
 }
 
 :root {
@@ -30,7 +35,7 @@ body {
   --pink: #F472B6;
 }
 
-/* ── Cosmic Card ── */
+/* ── Card ── */
 .card {
   background: var(--space-card);
   border: 1px solid var(--space-card-border);
@@ -40,7 +45,6 @@ body {
   -webkit-backdrop-filter: blur(16px);
   position: relative;
   overflow: hidden;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .card::before {
@@ -121,7 +125,7 @@ body {
   background: none;
   border: none;
   color: var(--text-secondary);
-  font-size: 10px;
+  font-size: 11px;
   font-family: 'Outfit', sans-serif;
   cursor: pointer;
   transition: color 0.3s ease;
@@ -142,12 +146,11 @@ body {
   height: 2px;
   background: var(--accent-purple);
   border-radius: 1px;
-  box-shadow: 0 0 8px rgba(124, 58, 237, 0.6);
 }
 
 .tab-bar button svg {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
 }
 
 /* ── Page ── */
@@ -169,66 +172,14 @@ body {
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  transition: opacity 0.2s, box-shadow 0.3s;
-  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.3);
+  transition: opacity 0.2s;
 }
 
 .btn-primary:active {
   opacity: 0.8;
 }
 
-/* ── Keyframe Animations ── */
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
-
-@keyframes float-delay {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
-}
-
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 8px rgba(124, 58, 237, 0.15); }
-  50% { box-shadow: 0 0 22px rgba(124, 58, 237, 0.35); }
-}
-
-@keyframes pulse-soft {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
-}
-
-@keyframes orbit {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@keyframes orbit-reverse {
-  from { transform: rotate(360deg); }
-  to { transform: rotate(0deg); }
-}
-
-@keyframes twinkle {
-  0%, 100% { opacity: 0.3; transform: scale(0.8); }
-  50% { opacity: 1; transform: scale(1.1); }
-}
-
-@keyframes warp-ring {
-  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0.8; }
-  100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
-}
-
-@keyframes warp-in {
-  0% { transform: scale(0.6); opacity: 0; }
-  60% { transform: scale(1.05); opacity: 1; }
-  100% { transform: scale(1); opacity: 1; }
-}
-
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
+/* ── Animations (only essential) ── */
 @keyframes fade-in-up {
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
@@ -239,21 +190,16 @@ body {
   to { opacity: 1; }
 }
 
-@keyframes nebula-drift {
-  0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.5; }
-  33% { transform: translate(8px, -4px) scale(1.08); opacity: 0.65; }
-  66% { transform: translate(-4px, 6px) scale(0.95); opacity: 0.4; }
+/* Loading screen */
+@keyframes warp-ring {
+  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0.8; }
+  100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
 }
 
-@keyframes streak {
-  0% { transform: translateX(-100%) scaleX(0); opacity: 0; }
-  10% { opacity: 1; }
-  100% { transform: translateX(400%) scaleX(1); opacity: 0; }
-}
-
-@keyframes ring-expand {
-  0% { r: 30; opacity: 0.4; }
-  100% { r: 55; opacity: 0; }
+@keyframes warp-in {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 /* ── Loading dots ── */
@@ -302,14 +248,10 @@ body {
   flex-shrink: 0;
 }
 
-/* ── Cosmic stat cards ── */
+/* ── Stat cards ── */
 .stat-cosmic {
   text-align: center;
-  animation: fade-in-up 0.6s ease both;
 }
-
-.stat-cosmic:nth-child(2) { animation-delay: 0.1s; }
-.stat-cosmic:nth-child(3) { animation-delay: 0.2s; }
 
 .stat-icon {
   width: 36px;
@@ -320,16 +262,6 @@ body {
   justify-content: center;
   margin: 0 auto 6px;
   font-size: 16px;
-  position: relative;
-}
-
-.stat-icon::after {
-  content: '';
-  position: absolute;
-  inset: -3px;
-  border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.06);
-  animation: spin-slow 12s linear infinite;
 }
 
 /* ── Vitamin orb ── */
@@ -341,7 +273,6 @@ body {
   border-radius: 14px;
   background: rgba(255,255,255,0.02);
   border: 1px solid rgba(255,255,255,0.04);
-  animation: fade-in-up 0.5s ease both;
   transition: background 0.2s;
 }
 
@@ -354,31 +285,12 @@ body {
   height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
-  position: relative;
-}
-
-.vitamin-dot::after {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  background: inherit;
-  opacity: 0.2;
-  filter: blur(3px);
-}
-
-.vitamin-dot.deficit {
-  animation: pulse-soft 2s ease-in-out infinite;
 }
 
 /* ── Food log entry ── */
 .food-entry {
-  animation: fade-in-up 0.4s ease both;
+  /* clean, no animation delay stagger */
 }
-
-.food-entry:nth-child(2) { animation-delay: 0.05s; }
-.food-entry:nth-child(3) { animation-delay: 0.1s; }
-.food-entry:nth-child(4) { animation-delay: 0.15s; }
 
 /* ── Day planet ── */
 .day-planet {
@@ -386,16 +298,7 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  animation: fade-in-up 0.5s ease both;
 }
-
-.day-planet:nth-child(1) { animation-delay: 0s; }
-.day-planet:nth-child(2) { animation-delay: 0.05s; }
-.day-planet:nth-child(3) { animation-delay: 0.1s; }
-.day-planet:nth-child(4) { animation-delay: 0.15s; }
-.day-planet:nth-child(5) { animation-delay: 0.2s; }
-.day-planet:nth-child(6) { animation-delay: 0.25s; }
-.day-planet:nth-child(7) { animation-delay: 0.3s; }
 
 /* ── Profile orbit ring ── */
 .profile-orbit {
@@ -411,22 +314,6 @@ body {
   inset: -6px;
   border-radius: 50%;
   border: 1px dashed rgba(124, 58, 237, 0.25);
-  animation: spin-slow 20s linear infinite;
-}
-
-.profile-orbit::after {
-  content: '';
-  position: absolute;
-  top: -8px;
-  left: 50%;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent-purple);
-  box-shadow: 0 0 8px rgba(124, 58, 237, 0.6);
-  transform: translateX(-50%);
-  animation: orbit 20s linear infinite;
-  transform-origin: 50% calc(50% + 50px);
 }
 
 /* ── Scrollbar ── */
@@ -441,4 +328,66 @@ body {
 ::-webkit-scrollbar-thumb {
   background: rgba(124, 58, 237, 0.2);
   border-radius: 2px;
+}
+
+/* Accessibility: large font mode */
+.accessibility-mode {
+  font-size: 22px !important;
+}
+.accessibility-mode .card {
+  padding: 20px !important;
+}
+.accessibility-mode button {
+  min-height: 52px !important;
+  font-size: 18px !important;
+}
+.accessibility-mode .section-title {
+  font-size: 20px !important;
+}
+.accessibility-mode .stat-cosmic {
+  padding: 18px !important;
+}
+.accessibility-mode .progress-bar {
+  height: 10px !important;
+}
+.accessibility-mode .vitamin-orb {
+  padding: 14px 16px !important;
+}
+.accessibility-mode .tab-bar button {
+  font-size: 12px !important;
+}
+.accessibility-mode .tab-bar button svg {
+  width: 26px !important;
+  height: 26px !important;
+}
+
+/* ── Notification slide-down ── */
+@keyframes slideDown {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ── Light theme ── */
+[data-theme="light"] {
+  --bg-primary: #f8f9fa;
+  --bg-secondary: #ffffff;
+  --text-primary: #1a1a2e;
+  --text-secondary: #666;
+  --card-bg: rgba(0,0,0,0.03);
+  --card-border: rgba(0,0,0,0.06);
+}
+[data-theme="light"] .card {
+  background: var(--card-bg);
+  border-color: var(--card-border);
+}
+[data-theme="light"] .page {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+[data-theme="light"] .tab-bar {
+  background: rgba(255,255,255,0.95);
+  border-top-color: rgba(0,0,0,0.06);
+}
+[data-theme="light"] .progress-bar {
+  background: rgba(0,0,0,0.06);
 }

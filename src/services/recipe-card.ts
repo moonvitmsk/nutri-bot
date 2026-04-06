@@ -160,7 +160,7 @@ function renderSvg(r: RecipeCardData): string {
 
   <!-- Brand -->
   <line x1="200" y1="822" x2="${W - 200}" y2="822" stroke="${C.accent}" stroke-width="1" opacity="0.15"/>
-  <text x="400" y="858" text-anchor="middle" fill="${C.accent}" font-size="14" font-weight="600" font-family="${F}" opacity="0.6">NutriBot by Moonvit</text>
+  <text x="400" y="858" text-anchor="middle" fill="${C.accent}" font-size="14" font-weight="600" font-family="${F}" opacity="0.6">Moonvit</text>
 </svg>`;
 }
 

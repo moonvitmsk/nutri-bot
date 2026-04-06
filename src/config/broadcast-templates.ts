@@ -158,7 +158,7 @@ export const BROADCAST_TEMPLATES: BroadcastTemplate[] = [
   {
     id: 'pr_02',
     topic: 'promo',
-    template: 'Пригласи друга в NutriBot — вы оба получите +7 дней Premium! Команда /invite',
+    template: 'Пригласи друга в Moonvit — вы оба получите +7 дней Premium! Команда /invite',
     cta_button: { text: '🤝 Пригласить', payload: 'action_invite' },
   },
   {

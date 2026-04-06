@@ -1,9 +1,17 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { WeekDay } from '../types';
+
+interface ApiNorm {
+  name: string;
+  unit: string;
+  daily: number;
+}
 
 interface Props {
   days: WeekDay[];
   target: { calories: number; protein: number; fat: number; carbs: number };
+  weekVitamins?: Record<string, number>;
+  norms?: Record<string, ApiNorm>;
 }
 
 function shortDay(dateStr: string): string {
@@ -25,11 +33,21 @@ function planetGlow(pct: number): string {
   return '0 0 8px rgba(248,113,113,0.25)';
 }
 
-export default function WeeklyReport({ days, target }: Props) {
+// moonvit product recommendations based on deficiencies
+const MOONVIT_RECS: Record<string, { product: string; color: string }> = {
+  vitamin_d: { product: 'moonvit D3', color: '#FBBF24' },
+  vitamin_c: { product: 'moonvit C', color: '#F87171' },
+  iron: { product: 'moonvit Iron', color: '#6EE7B7' },
+  magnesium: { product: 'moonvit Mg', color: '#A78BFA' },
+  zinc: { product: 'moonvit Zinc', color: '#60A5FA' },
+  vitamin_b12: { product: 'moonvit B12', color: '#F472B6' },
+};
+
+export default function WeeklyReport({ days, target, weekVitamins, norms }: Props) {
   if (!days.length) {
     return (
       <div className="card" style={{ textAlign: 'center', padding: 28 }}>
-        <div style={{ fontSize: 32, marginBottom: 8, animation: 'float 3s ease-in-out infinite' }}>🌌</div>
+        <div style={{ fontSize: 32, marginBottom: 8 }}>🌌</div>
         <div style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Нет данных за неделю</div>
       </div>
     );
@@ -53,7 +71,7 @@ export default function WeeklyReport({ days, target }: Props) {
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>дней</div>
         </div>
-        <div className="card stat-cosmic" style={{ flex: 1, padding: '14px 8px', animationDelay: '0.1s' }}>
+        <div className="card stat-cosmic" style={{ flex: 1, padding: '14px 8px' }}>
           <div style={{
             fontFamily: "'JetBrains Mono', monospace",
             fontSize: 22,
@@ -145,7 +163,7 @@ export default function WeeklyReport({ days, target }: Props) {
                         inset: -4,
                         borderRadius: '50%',
                         border: '1px dashed rgba(124,58,237,0.3)',
-                        animation: 'spin-slow 8s linear infinite',
+                        /* static indicator */
                       }} />
                     )}
                   </div>
@@ -211,6 +229,84 @@ export default function WeeklyReport({ days, target }: Props) {
           ))}
         </div>
       </div>
+
+      {/* Vitamin recommendations */}
+      {weekVitamins && norms && <VitaminRecommendations weekVitamins={weekVitamins} norms={norms} loggedDays={loggedDays.length} />}
+    </div>
+  );
+}
+
+function VitaminRecommendations({ weekVitamins, norms, loggedDays }: {
+  weekVitamins: Record<string, number>;
+  norms: Record<string, ApiNorm>;
+  loggedDays: number;
+}) {
+  const deficiencies = useMemo(() => {
+    if (loggedDays < 3) return []; // Not enough data
+    const result: { key: string; name: string; pct: number; product?: string; color: string }[] = [];
+    for (const [key, norm] of Object.entries(norms)) {
+      if (norm.daily <= 0) continue;
+      const weekTotal = weekVitamins[key] || 0;
+      const avgDaily = weekTotal / Math.max(loggedDays, 1);
+      const pct = Math.round((avgDaily / norm.daily) * 100);
+      if (pct < 60) {
+        const rec = MOONVIT_RECS[key];
+        result.push({
+          key,
+          name: norm.name,
+          pct,
+          product: rec?.product,
+          color: rec?.color || 'var(--text-secondary)',
+        });
+      }
+    }
+    return result.sort((a, b) => a.pct - b.pct).slice(0, 4);
+  }, [weekVitamins, norms, loggedDays]);
+
+  if (deficiencies.length === 0) {
+    if (loggedDays >= 3) {
+      return (
+        <div className="card" style={{ padding: '14px 16px', marginTop: 10, textAlign: 'center' }}>
+          <span style={{ fontSize: 20, marginRight: 8 }}>✨</span>
+          <span style={{ fontSize: 13, color: 'var(--green)' }}>Витамины в норме! Так держать!</span>
+        </div>
+      );
+    }
+    return null;
+  }
+
+  return (
+    <div className="card" style={{ padding: '16px 18px', marginTop: 10 }}>
+      <div className="section-title">Рекомендации по витаминам</div>
+      <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 10 }}>
+        На основе среднего потребления за {loggedDays} дней
+      </div>
+      {deficiencies.map(d => (
+        <div key={d.key} style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '8px 0',
+          borderBottom: '1px solid rgba(255,255,255,0.04)',
+        }}>
+          <div style={{
+            width: 8, height: 8, borderRadius: '50%',
+            background: d.color, flexShrink: 0,
+          }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 500 }}>{d.name}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+              {d.pct}% от нормы
+              {d.product && <span style={{ color: 'var(--accent-purple)', marginLeft: 4 }}>→ {d.product}</span>}
+            </div>
+          </div>
+          {/* Mini bar */}
+          <div style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.06)' }}>
+            <div style={{
+              width: `${Math.min(d.pct, 100)}%`, height: '100%', borderRadius: 2,
+              background: d.pct < 30 ? 'var(--red)' : 'var(--yellow)',
+            }} />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

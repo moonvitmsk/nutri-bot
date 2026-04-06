@@ -60,8 +60,8 @@ function renderSvg(userName?: string): string {
   <circle cx="400" cy="75" r="45" fill="${C.accent}" opacity="0.06" filter="url(#glow)"/>
 
   <!-- Title -->
-  <text x="400" y="82" text-anchor="middle" fill="url(#tg)" font-size="38" font-weight="700" font-family="${F}">NutriBot</text>
-  <text x="400" y="112" text-anchor="middle" fill="${C.gray}" font-size="16" font-family="${F}">AI-\u043D\u0443\u0442\u0440\u0438\u0446\u0438\u043E\u043B\u043E\u0433 \u043E\u0442 Moonvit</text>
+  <text x="400" y="82" text-anchor="middle" fill="url(#tg)" font-size="38" font-weight="700" font-family="${F}">Moonvit</text>
+  <text x="400" y="112" text-anchor="middle" fill="${C.gray}" font-size="16" font-family="${F}">AI-\u043D\u0443\u0442\u0440\u0438\u0446\u0438\u043E\u043B\u043E\u0433</text>
 
   ${safeName ? `<text x="400" y="148" text-anchor="middle" fill="${C.accent}" font-size="18" font-weight="600" font-family="${F}">\u041F\u0440\u0438\u0432\u0435\u0442, ${safeName}!</text>` : ''}
 
@@ -77,7 +77,7 @@ function renderSvg(userName?: string): string {
   <line x1="100" y1="455" x2="${W - 100}" y2="455" stroke="${C.accent}" stroke-width="1" opacity="0.15"/>
 
   <!-- Brand -->
-  <text x="400" y="490" text-anchor="middle" fill="${C.accent}" font-size="14" font-weight="600" font-family="${F}" opacity="0.6">NutriBot by Moonvit</text>
+  <text x="400" y="490" text-anchor="middle" fill="${C.accent}" font-size="14" font-weight="600" font-family="${F}" opacity="0.6">Moonvit</text>
 </svg>`;
 }
 

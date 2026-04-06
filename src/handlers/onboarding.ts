@@ -32,7 +32,7 @@ export async function startOnboarding(user: NutriUser, chatId: number) {
     try {
       const model = await getSetting('ai_model_chat') || 'gpt-4.1-mini';
       const greetingPrompt = await getSetting('prompt_greeting_ai') ||
-        'Сгенерируй уникальное короткое приветствие (3-4 предложения) для AI-бота-нутрициолога. Стиль: робот Бендер + Артемий Лебедев. Тон: дерзкий, с юмором, но дружелюбный. Главный призыв: поделиться номером телефона чтобы начать. Не повторяйся. Не используй мат. Бот называется NutriBot от Moonvit. Ответ — только текст приветствия.';
+        'Сгенерируй уникальное короткое приветствие (3-4 предложения) для AI-бота-нутрициолога. Стиль: робот Бендер + Артемий Лебедев. Тон: дерзкий, с юмором, но дружелюбный. Главный призыв: поделиться номером телефона чтобы начать. Не повторяйся. Не используй мат. Бот называется Moonvit. Ответ — только текст приветствия.';
       const { text } = await chatCompletion([
         { role: 'system', content: greetingPrompt },
         { role: 'user', content: 'Сгенерируй приветствие' },
@@ -125,22 +125,27 @@ export async function handleOnboardingStep(user: NutriUser, text: string, chatId
   switch (step) {
     case 0:
       // Step 0 = phone-first. User sent text instead of sharing phone — explain gently
-      await sendMessage(chatId, 'Я пока не могу ответить — мне нужен твой номер телефона для активации. Нажми кнопку ниже:');
+      await sendMessage(chatId, await getMsg('msg_phone_explain'));
       await sendContactRequest(chatId, await getMsg('onboarding_phone_button'));
       return;
 
     case 1: { // got name — validate
       const nameTrim = text.trim();
       const lower = nameTrim.toLowerCase();
-      const greetings = ['привет', 'здравствуйте', 'hi', 'hello', 'хай', 'ку', 'здрасте', 'добрый', 'ghbdtn', 'privet'];
-      const isGreeting = greetings.some(g => lower.startsWith(g));
+      const NOT_NAMES = ['спасибо', 'привет', 'здравствуйте', 'ок', 'окей', 'да', 'нет', 'хорошо', 'ладно', 'понял', 'понятно', 'давай', 'пока', 'помощь', 'help', 'start', 'меню', 'стоп', 'отмена', 'hi', 'hello', 'хай', 'ку', 'здрасте', 'добрый', 'ghbdtn', 'privet'];
+      const isNotName = NOT_NAMES.some(w => lower === w);
+      const isGreetingPrefix = ['привет', 'здравствуйте', 'добрый'].some(g => lower.startsWith(g) && lower !== g);
       const isCommand = nameTrim.startsWith('/');
       const isTooShort = nameTrim.length < 2;
       const isNumber = /^\d+$/.test(nameTrim);
 
-      if (isGreeting || isCommand || isTooShort || isNumber) {
+      if (isNotName) {
+        await sendMessage(chatId, await getMsg('msg_not_a_name'));
+        return;
+      }
+      if (isGreetingPrefix || isCommand || isTooShort || isNumber) {
         // Not a valid name — re-ask
-        await sendMessage(chatId, 'Привет! Как тебя зовут? Напиши своё имя:');
+        await sendMessage(chatId, await getMsg('msg_ask_name_again'));
         return;
       }
       updates.name = nameTrim.slice(0, 100);
@@ -469,7 +474,7 @@ export async function handleOnboardingCallback(user: NutriUser, payload: string,
         // Already onboarded — switch to goal_text editing
         await setContextState(user.id, 'editing_goal_text');
       }
-      await sendMessage(chatId, 'Напиши, чего ты хочешь от NutriBot — любую цель или пожелание:');
+      await sendMessage(chatId, await getMsg('msg_goal_custom_prompt'));
       return;
     }
 
@@ -517,7 +522,8 @@ export async function handleProfileEdit(user: NutriUser, text: string, chatId: n
       await sendMessage(chatId, `Имя обновлено: ${updates.name}`, await mainMenu());
       return;
 
-    case 'birth': {
+    case 'birth':
+    case 'age': {
       const num = parseInt(text);
       if (!isNaN(num) && num >= 10 && num <= 120 && text.trim().length <= 3) {
         await updateProfileAndRecalc(user, { age: num, context_state: 'idle' }, chatId);
@@ -526,6 +532,7 @@ export async function handleProfileEdit(user: NutriUser, text: string, chatId: n
       const parsed = parseBirthDate(text);
       if (!parsed) {
         await sendMessage(chatId, await getMsg('onboarding_date_error'));
+        await updateUser(user.id, { context_state: 'idle' } as any);
         return;
       }
       await updateProfileAndRecalc(user, { birth_date: parsed.date, age: parsed.age, context_state: 'idle' }, chatId);
@@ -536,6 +543,7 @@ export async function handleProfileEdit(user: NutriUser, text: string, chatId: n
       const h = parseInt(text);
       if (isNaN(h) || h < 100 || h > 250) {
         await sendMessage(chatId, await getMsg('onboarding_height_error'));
+        await updateUser(user.id, { context_state: 'idle' } as any);
         return;
       }
       await updateProfileAndRecalc(user, { height_cm: h, context_state: 'idle' }, chatId);
@@ -546,6 +554,7 @@ export async function handleProfileEdit(user: NutriUser, text: string, chatId: n
       const w = parseFloat(text);
       if (isNaN(w) || w < 30 || w > 250) {
         await sendMessage(chatId, await getMsg('onboarding_weight_error'));
+        await updateUser(user.id, { context_state: 'idle' } as any);
         return;
       }
       await updateProfileAndRecalc(user, { weight_kg: w, context_state: 'idle' }, chatId);
@@ -556,6 +565,7 @@ export async function handleProfileEdit(user: NutriUser, text: string, chatId: n
       const goalText = text.trim().slice(0, 500);
       if (goalText.length < 2) {
         await sendMessage(chatId, 'Напиши цель подробнее:');
+        await updateUser(user.id, { context_state: 'idle' } as any);
         return;
       }
       await updateUser(user.id, { context_state: 'idle' } as any);

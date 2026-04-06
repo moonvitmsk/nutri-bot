@@ -1,4 +1,5 @@
-import React from 'react';
+// v0.8.4 — vitamins page with unique colors, chemical formulas, "important first" filter
+import React, { useState, useMemo } from 'react';
 import type { ApiNorm, ApiLabResult } from '../lib/api';
 
 interface Props {
@@ -7,16 +8,36 @@ interface Props {
   labResults: ApiLabResult[];
 }
 
-function getColor(pct: number): string {
+// Chemical formulas and unique colors per nutrient key
+const NUTRIENT_META: Record<string, { formula: string; color: string }> = {
+  vitamin_a: { formula: 'A', color: '#FF9F43' },
+  vitamin_c: { formula: 'C', color: '#FF6B6B' },
+  vitamin_d: { formula: 'D', color: '#FECA57' },
+  vitamin_e: { formula: 'E', color: '#1DD1A1' },
+  vitamin_b1: { formula: 'B\u2081', color: '#54A0FF' },
+  vitamin_b2: { formula: 'B\u2082', color: '#A29BFE' },
+  vitamin_b6: { formula: 'B\u2086', color: '#FD79A8' },
+  vitamin_b12: { formula: 'B\u2081\u2082', color: '#E056A0' },
+  vitamin_b9: { formula: 'B\u2089', color: '#00D2D3' },
+  iron: { formula: 'Fe', color: '#EE5A24' },
+  calcium: { formula: 'Ca', color: '#C8D6E5' },
+  magnesium: { formula: 'Mg', color: '#A78BFA' },
+  zinc: { formula: 'Zn', color: '#48DBFB' },
+  selenium: { formula: 'Se', color: '#F0932B' },
+  potassium: { formula: 'K', color: '#6AB04C' },
+  sodium: { formula: 'Na', color: '#DFE6E9' },
+  phosphorus: { formula: 'P', color: '#FFC312' },
+  iodine: { formula: 'I', color: '#7C3AED' },
+};
+
+function getMeta(key: string) {
+  return NUTRIENT_META[key] || { formula: key.slice(0, 2).toUpperCase(), color: '#64748B' };
+}
+
+function getStatusColor(pct: number): string {
   if (pct >= 80 && pct <= 200) return 'var(--green)';
   if (pct >= 50) return 'var(--yellow)';
   return 'var(--red)';
-}
-
-function getGlow(pct: number): string {
-  if (pct >= 80 && pct <= 200) return 'rgba(110,231,183,0.3)';
-  if (pct >= 50) return 'rgba(251,191,36,0.25)';
-  return 'rgba(248,113,113,0.3)';
 }
 
 function getStatusLabel(pct: number): string {
@@ -27,55 +48,54 @@ function getStatusLabel(pct: number): string {
   return 'Дефицит';
 }
 
-function NutrientRow({ name, amount, norm, unit, index }: {
-  name: string; amount: number; norm: number; unit: string; index: number;
+type SortMode = 'important' | 'alpha';
+
+function NutrientRow({ nKey, name, amount, norm, unit }: {
+  nKey: string; name: string; amount: number; norm: number; unit: string;
 }) {
   const pct = norm > 0 ? Math.round((amount / norm) * 100) : 0;
-  const color = getColor(pct);
-  const glow = getGlow(pct);
+  const statusColor = getStatusColor(pct);
+  const meta = getMeta(nKey);
   const isDeficit = pct < 50;
 
   return (
     <div
       className="vitamin-orb"
-      style={{
-        animationDelay: `${index * 0.03}s`,
-        padding: '10px 12px',
-        gap: 12,
-      }}
+      style={{ padding: '10px 12px', gap: 12 }}
     >
-      {/* Planet indicator */}
+      {/* Colored formula badge */}
       <div style={{
-        width: 38,
-        height: 38,
-        borderRadius: 12,
-        background: `${color}15`,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
-        position: 'relative',
+        width: 42, height: 42, borderRadius: 14,
+        background: `${meta.color}15`,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        flexShrink: 0, position: 'relative',
       }}>
-        <div
-          className={`vitamin-dot${isDeficit ? ' deficit' : ''}`}
-          style={{
-            width: 8,
-            height: 8,
-            background: color,
-            boxShadow: `0 0 6px ${glow}`,
-            position: 'absolute',
-            top: 4,
-            right: 4,
-          }}
-        />
         <span style={{
           fontFamily: "'JetBrains Mono', monospace",
-          fontSize: 12,
-          fontWeight: 700,
-          color,
+          fontSize: 15, fontWeight: 700,
+          color: meta.color,
+          lineHeight: 1,
+        }}>
+          {meta.formula}
+        </span>
+        <span style={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 9, fontWeight: 600,
+          color: statusColor,
+          marginTop: 1,
         }}>
           {pct}%
         </span>
+        {isDeficit && (
+          <div style={{
+            position: 'absolute', top: 2, right: 2,
+            width: 6, height: 6, borderRadius: '50%',
+            background: 'var(--red)',
+            boxShadow: '0 0 6px rgba(248,113,113,0.5)',
+            animation: 'dot-pulse 1.4s ease-in-out infinite',
+          }} />
+        )}
       </div>
 
       {/* Info */}
@@ -86,22 +106,20 @@ function NutrientRow({ name, amount, norm, unit, index }: {
         </div>
       </div>
 
-      {/* Mini bar */}
-      <div style={{ width: 48 }}>
+      {/* Mini bar + status */}
+      <div style={{ width: 52 }}>
         <div className="progress-bar" style={{ height: 4 }}>
           <div
             className="progress-fill"
             style={{
               width: `${Math.min(pct, 100)}%`,
-              background: `linear-gradient(90deg, ${color}88, ${color})`,
+              background: `linear-gradient(90deg, ${meta.color}88, ${meta.color})`,
             }}
           />
         </div>
         <div style={{
-          fontSize: 9,
-          color: 'var(--text-secondary)',
-          textAlign: 'right',
-          marginTop: 2,
+          fontSize: 9, textAlign: 'right', marginTop: 2,
+          color: statusColor, fontWeight: 600,
         }}>
           {getStatusLabel(pct)}
         </div>
@@ -111,6 +129,8 @@ function NutrientRow({ name, amount, norm, unit, index }: {
 }
 
 export default function VitaminsPage({ vitamins, norms, labResults }: Props) {
+  const [sortMode, setSortMode] = useState<SortMode>('important');
+
   const nutrientKeys = Object.keys(norms);
   const vitaminKeys = nutrientKeys.filter(k => k.startsWith('vitamin_'));
   const mineralKeys = nutrientKeys.filter(k => !k.startsWith('vitamin_'));
@@ -128,6 +148,18 @@ export default function VitaminsPage({ vitamins, norms, labResults }: Props) {
     return pct >= 80 && pct <= 120;
   }).length;
 
+  // Sort function
+  const sortKeys = useMemo(() => (keys: string[]) => {
+    if (sortMode === 'important') {
+      return [...keys].sort((a, b) => {
+        const pctA = norms[a].daily > 0 ? ((vitamins[a] || 0) / norms[a].daily) * 100 : 100;
+        const pctB = norms[b].daily > 0 ? ((vitamins[b] || 0) / norms[b].daily) * 100 : 100;
+        return pctA - pctB; // deficits first
+      });
+    }
+    return keys; // alpha = default order from norms
+  }, [sortMode, vitamins, norms]);
+
   return (
     <div>
       {/* Summary */}
@@ -135,30 +167,50 @@ export default function VitaminsPage({ vitamins, norms, labResults }: Props) {
         <div className="card stat-cosmic" style={{ flex: 1, padding: '14px 8px' }}>
           <div style={{
             fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 22,
-            fontWeight: 700,
-            color: 'var(--green)',
+            fontSize: 22, fontWeight: 700, color: 'var(--green)',
           }}>{normalCount}</div>
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>в норме</div>
         </div>
-        <div className="card stat-cosmic" style={{ flex: 1, padding: '14px 8px', animationDelay: '0.1s' }}>
+        <div className="card stat-cosmic" style={{ flex: 1, padding: '14px 8px' }}>
           <div style={{
             fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 22,
-            fontWeight: 700,
-            color: 'var(--red)',
+            fontSize: 22, fontWeight: 700, color: 'var(--red)',
           }}>{deficitCount}</div>
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>дефицит</div>
         </div>
-        <div className="card stat-cosmic" style={{ flex: 1, padding: '14px 8px', animationDelay: '0.2s' }}>
+        <div className="card stat-cosmic" style={{ flex: 1, padding: '14px 8px' }}>
           <div style={{
             fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 22,
-            fontWeight: 700,
-            color: 'var(--text-primary)',
+            fontSize: 22, fontWeight: 700, color: 'var(--text-primary)',
           }}>{nutrientKeys.length}</div>
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>всего</div>
         </div>
+      </div>
+
+      {/* Sort toggle */}
+      <div style={{
+        display: 'flex', gap: 6, marginBottom: 12,
+        padding: '4px', borderRadius: 12,
+        background: 'rgba(255,255,255,0.03)',
+      }}>
+        {[
+          { key: 'important' as SortMode, label: 'Важные первыми' },
+          { key: 'alpha' as SortMode, label: 'По типу' },
+        ].map(s => (
+          <button
+            key={s.key}
+            onClick={() => setSortMode(s.key)}
+            style={{
+              flex: 1, padding: '8px 12px', borderRadius: 10,
+              border: 'none',
+              background: sortMode === s.key ? 'rgba(124,58,237,0.12)' : 'transparent',
+              color: sortMode === s.key ? 'var(--accent-purple)' : 'var(--text-secondary)',
+              fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            {s.label}
+          </button>
+        ))}
       </div>
 
       {/* Vitamins */}
@@ -168,16 +220,16 @@ export default function VitaminsPage({ vitamins, norms, labResults }: Props) {
           Данные за сегодня
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {vitaminKeys.map((key, i) => {
+          {sortKeys(vitaminKeys).map((key) => {
             const norm = norms[key];
             return (
               <NutrientRow
                 key={key}
+                nKey={key}
                 name={norm.name}
                 amount={vitamins[key] || 0}
                 norm={norm.daily}
                 unit={norm.unit}
-                index={i}
               />
             );
           })}
@@ -191,16 +243,16 @@ export default function VitaminsPage({ vitamins, norms, labResults }: Props) {
           Нормы по МР 2.3.1.0253-21
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {mineralKeys.map((key, i) => {
+          {sortKeys(mineralKeys).map((key) => {
             const norm = norms[key];
             return (
               <NutrientRow
                 key={key}
+                nKey={key}
                 name={norm.name}
                 amount={vitamins[key] || 0}
                 norm={norm.daily}
                 unit={norm.unit}
-                index={i}
               />
             );
           })}
@@ -220,8 +272,7 @@ export default function VitaminsPage({ vitamins, norms, labResults }: Props) {
                 <span style={{ fontSize: 13, fontWeight: 500 }}>Анализ крови</span>
                 <span style={{
                   fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 11,
-                  color: 'var(--text-secondary)',
+                  fontSize: 11, color: 'var(--text-secondary)',
                 }}>
                   {new Date(lr.created_at).toLocaleDateString('ru-RU')}
                 </span>
@@ -243,7 +294,7 @@ export default function VitaminsPage({ vitamins, norms, labResults }: Props) {
         </div>
       ) : (
         <div className="card" style={{ textAlign: 'center', padding: 24 }}>
-          <div style={{ fontSize: 32, marginBottom: 8, animation: 'float 3s ease-in-out infinite' }}>🔬</div>
+          <div style={{ fontSize: 32, marginBottom: 8 }}>🔬</div>
           <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 4 }}>Нет анализов</div>
           <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
             Отправьте фото анализа крови в бот

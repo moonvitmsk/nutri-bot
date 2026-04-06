@@ -1,9 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useMAXBridge } from './hooks/useMAXBridge';
-import {
-  authenticate, updateWater, deleteFood, addFood,
-  type AuthResponse, type ApiUser, type ApiLog, type ApiWeekDay,
-} from './lib/api';
+import React, { useState, Suspense } from 'react';
+import { useAppData, type AISubPage } from './hooks/useAppData';
+import { authenticate, confirmFood } from './lib/api';
 import DailyProgress from './components/DailyProgress';
 import VitaminChart from './components/VitaminChart';
 import FoodDiary from './components/FoodDiary';
@@ -14,145 +11,24 @@ import LoadingScreen from './components/LoadingScreen';
 import MealDetail from './components/MealDetail';
 import AddFoodForm from './components/AddFoodForm';
 import Recommendations from './components/Recommendations';
-import type { UserProfile, FoodLog, VitaminData, WeekDay } from './types';
+import SimpleMode from './components/SimpleMode';
 
-type Page = 'today' | 'diary' | 'week' | 'vitamins' | 'profile';
+// Lazy-loaded heavy AI pages
+const RecipesPage = React.lazy(() => import('./components/RecipesPage'));
+const MealPlanPage = React.lazy(() => import('./components/MealPlanPage'));
+const AIChat = React.lazy(() => import('./components/AIChat'));
+const DeepConsultPage = React.lazy(() => import('./components/DeepConsultPage'));
+const RestaurantMenuPage = React.lazy(() => import('./components/RestaurantMenuPage'));
+const LabAnalysisPage = React.lazy(() => import('./components/LabAnalysisPage'));
 
-// ── Mappers ──
-
-function toUserProfile(u: ApiUser): UserProfile {
-  return {
-    id: u.id,
-    name: u.name || 'Пользователь',
-    sex: u.sex || 'male',
-    age: u.age || 0,
-    height_cm: u.height_cm || 0,
-    weight_kg: u.weight_kg || 0,
-    goal: u.goal_text || u.goal || '',
-    daily_calories: u.daily_calories || 2000,
-    daily_protein: u.daily_protein || 100,
-    daily_fat: u.daily_fat || 70,
-    daily_carbs: u.daily_carbs || 250,
-    streak_days: u.streak_days,
-    xp: 0,
-    level: 1,
-    subscription_type: u.subscription_type,
-    achievements: [],
-    water_norm: u.water_norm || 8,
-  };
-}
-
-function toFoodLogs(logs: ApiLog[]): FoodLog[] {
-  return logs.map(l => ({
-    id: l.id,
-    description: l.description || 'Приём пищи',
-    calories: l.calories,
-    protein: l.protein,
-    fat: l.fat,
-    carbs: l.carbs,
-    created_at: l.created_at,
-    confirmed: true,
-    photo_url: l.photo_url || undefined,
-    micronutrients: l.micronutrients || undefined,
-    items: l.items || undefined,
-    comment: l.comment || undefined,
-  }));
-}
-
-function toVitaminData(
-  vitamins: Record<string, number>,
-  norms: Record<string, { name: string; unit: string; daily: number }>,
-): VitaminData[] {
-  const keys = [
-    'vitamin_a', 'vitamin_c', 'vitamin_d', 'vitamin_e',
-    'vitamin_b1', 'vitamin_b2', 'vitamin_b6', 'vitamin_b12',
-    'vitamin_b9', 'iron', 'calcium', 'magnesium', 'zinc', 'selenium',
-  ];
-  return keys
-    .filter(k => norms[k])
-    .map(k => {
-      const norm = norms[k];
-      const amount = vitamins[k] || 0;
-      const pct = norm.daily > 0 ? Math.round((amount / norm.daily) * 100) : 0;
-      return { name: norm.name, value: pct, color: '' };
-    });
-}
-
-// ── Mock data ──
-
-const MOCK: AuthResponse = {
-  ok: true,
-  user: {
-    id: 'dev-1', name: 'Разработчик', sex: 'male', age: 30,
-    height_cm: 180, weight_kg: 78, goal: 'maintain', goal_text: 'Поддержание',
-    daily_calories: 2200, daily_protein: 120, daily_fat: 75, daily_carbs: 270,
-    water_glasses: 3, water_norm: 9, streak_days: 5,
-    subscription_type: 'trial', onboarding_completed: true,
-  },
-  logs: [
-    {
-      id: '1', description: 'Овсянка с ягодами', calories: 320, protein: 12, fat: 8, carbs: 52,
-      photo_url: null, created_at: new Date().toISOString(),
-      micronutrients: { vitamin_b1: 0.4, vitamin_b6: 0.3, iron: 2.5, magnesium: 60, zinc: 1.5 },
-      items: [{ name: 'Овсянка', weight_g: 80, calories: 240, protein: 8, fat: 5, carbs: 40 }, { name: 'Ягоды', weight_g: 100, calories: 80, protein: 4, fat: 3, carbs: 12 }],
-      comment: 'Отличный завтрак! Богат клетчаткой и сложными углеводами.',
-    },
-    {
-      id: '2', description: 'Куриная грудка + рис', calories: 480, protein: 42, fat: 10, carbs: 55,
-      photo_url: null, created_at: new Date().toISOString(),
-      micronutrients: { vitamin_b6: 0.8, vitamin_b12: 0.5, iron: 1.5, zinc: 3, selenium: 25 },
-      items: [{ name: 'Куриная грудка', weight_g: 200, calories: 330, protein: 38, fat: 8, carbs: 0 }, { name: 'Рис', weight_g: 150, calories: 150, protein: 4, fat: 2, carbs: 55 }],
-      comment: 'Классический обед — много белка для восстановления.',
-    },
-    {
-      id: '3', description: 'Творог с бананом', calories: 280, protein: 22, fat: 6, carbs: 35,
-      photo_url: null, created_at: new Date(Date.now() - 86400000).toISOString(),
-      micronutrients: { calcium: 200, vitamin_b2: 0.3, vitamin_b12: 0.8 },
-      items: null, comment: null,
-    },
-  ],
-  today_vitamins: {
-    vitamin_c: 45, vitamin_d: 5, vitamin_a: 300, vitamin_e: 8,
-    vitamin_b1: 0.9, vitamin_b2: 1.0, vitamin_b6: 1.2, vitamin_b12: 2.5, vitamin_b9: 180,
-    iron: 8, calcium: 400, magnesium: 150, zinc: 6, selenium: 25,
-  },
-  week: Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(Date.now() - (6 - i) * 86400000);
-    const logged = i < 5;
-    return {
-      date: d.toISOString().split('T')[0],
-      calories: logged ? 1800 + Math.floor(Math.random() * 600) : 0,
-      protein: logged ? 80 + Math.floor(Math.random() * 60) : 0,
-      fat: logged ? 50 + Math.floor(Math.random() * 40) : 0,
-      carbs: logged ? 200 + Math.floor(Math.random() * 100) : 0,
-      logged,
-    };
-  }),
-  norms: {
-    vitamin_a: { name: 'Витамин A', unit: 'мкг', daily: 900 },
-    vitamin_b1: { name: 'Витамин B1', unit: 'мг', daily: 1.5 },
-    vitamin_b2: { name: 'Витамин B2', unit: 'мг', daily: 1.8 },
-    vitamin_b6: { name: 'Витамин B6', unit: 'мг', daily: 2.0 },
-    vitamin_b9: { name: 'Фолиевая к-та', unit: 'мкг', daily: 400 },
-    vitamin_b12: { name: 'Витамин B12', unit: 'мкг', daily: 3.0 },
-    vitamin_c: { name: 'Витамин C', unit: 'мг', daily: 100 },
-    vitamin_d: { name: 'Витамин D', unit: 'мкг', daily: 15 },
-    vitamin_e: { name: 'Витамин E', unit: 'мг', daily: 15 },
-    calcium: { name: 'Кальций', unit: 'мг', daily: 1000 },
-    iron: { name: 'Железо', unit: 'мг', daily: 10 },
-    magnesium: { name: 'Магний', unit: 'мг', daily: 400 },
-    zinc: { name: 'Цинк', unit: 'мг', daily: 12 },
-    selenium: { name: 'Селен', unit: 'мкг', daily: 70 },
-  },
-  lab_results: [],
-};
+type Page = 'today' | 'diary' | 'ai' | 'vitamins' | 'profile';
 
 // ── Tab bar icons ──
 
 const icons: Record<Page, string> = {
   today: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z',
   diary: 'M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z',
-  week: 'M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11z',
+  ai: 'M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 017 7h1a1 1 0 110 2h-1.07A7.001 7.001 0 0113 22h-2a7.001 7.001 0 01-6.93-6H3a1 1 0 110-2h1a7 7 0 017-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 012-2z',
   vitamins: 'M19.8 18.4L14 10.67V6.5l1.35-1.69c.26-.33.03-.81-.39-.81H9.04c-.42 0-.65.48-.39.81L10 6.5v4.17L4.2 18.4c-.49.66-.02 1.6.8 1.6h14c.82 0 1.29-.94.8-1.6z',
   profile: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z',
 };
@@ -160,7 +36,7 @@ const icons: Record<Page, string> = {
 const labels: Record<Page, string> = {
   today: 'Сегодня',
   diary: 'Дневник',
-  week: 'Неделя',
+  ai: 'moonvit',
   vitamins: 'Витамины',
   profile: 'Профиль',
 };
@@ -168,119 +44,21 @@ const labels: Record<Page, string> = {
 // ── App ──
 
 export default function App() {
-  const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [error, setError] = useState('');
   const [page, setPage] = useState<Page>('today');
-  const [data, setData] = useState<AuthResponse | null>(null);
-  const [selectedLog, setSelectedLog] = useState<FoodLog | null>(null);
-  const [showAddFood, setShowAddFood] = useState(false);
-  const [addFoodLoading, setAddFoodLoading] = useState(false);
-  const bridge = useMAXBridge();
 
-  const initData = bridge?.initData || '';
-
-  useEffect(() => {
-    async function init() {
-      if (!bridge?.initData) {
-        setData(MOCK);
-        setState('ready');
-        return;
-      }
-      try {
-        const result = await authenticate(bridge.initData);
-        setData(result);
-        setState('ready');
-        bridge.ready();
-      } catch (err: any) {
-        console.error('[miniapp] Auth failed:', err);
-        setError(err.message || 'Ошибка загрузки');
-        setState('error');
-      }
-    }
-    init();
-  }, []);
-
-  // ── Mutation handlers ──
-
-  const handleWaterChange = useCallback(async (delta: number) => {
-    if (!data) return;
-    // Optimistic update
-    setData(prev => prev ? {
-      ...prev,
-      user: { ...prev.user, water_glasses: Math.max(0, prev.user.water_glasses + delta) },
-    } : prev);
-    bridge?.HapticFeedback?.impactOccurred('light');
-
-    if (initData) {
-      try {
-        const res = await updateWater(initData, delta);
-        setData(prev => prev ? {
-          ...prev,
-          user: { ...prev.user, water_glasses: res.water_glasses },
-        } : prev);
-      } catch { /* optimistic update stays */ }
-    }
-  }, [data, initData, bridge]);
-
-  const handleDeleteFood = useCallback(async (logId: string) => {
-    if (!data) return;
-    const logToRemove = data.logs.find(l => l.id === logId);
-
-    // Optimistic remove
-    setData(prev => prev ? { ...prev, logs: prev.logs.filter(l => l.id !== logId) } : prev);
-    setSelectedLog(null);
-    bridge?.HapticFeedback?.notificationOccurred('warning');
-
-    // Recalculate today's vitamins
-    if (logToRemove?.micronutrients) {
-      setData(prev => {
-        if (!prev) return prev;
-        const updated = { ...prev.today_vitamins };
-        for (const [k, v] of Object.entries(logToRemove.micronutrients!)) {
-          if (typeof v === 'number') updated[k] = Math.max(0, (updated[k] || 0) - v);
-        }
-        return { ...prev, today_vitamins: updated };
-      });
-    }
-
-    if (initData) {
-      try { await deleteFood(initData, logId); }
-      catch { /* already removed from UI */ }
-    }
-  }, [data, initData, bridge]);
-
-  const handleAddFood = useCallback(async (text: string) => {
-    if (!data) return;
-    setAddFoodLoading(true);
-
-    try {
-      const res = await addFood(initData || 'dev', text);
-      if (res.ok && res.log) {
-        setData(prev => {
-          if (!prev) return prev;
-          const newLog = res.log!;
-          // Add micronutrients to today's totals
-          const updatedVitamins = { ...prev.today_vitamins };
-          if (newLog.micronutrients) {
-            for (const [k, v] of Object.entries(newLog.micronutrients)) {
-              if (typeof v === 'number') updatedVitamins[k] = (updatedVitamins[k] || 0) + v;
-            }
-          }
-          return {
-            ...prev,
-            logs: [newLog, ...prev.logs],
-            today_vitamins: updatedVitamins,
-          };
-        });
-        bridge?.HapticFeedback?.notificationOccurred('success');
-        setShowAddFood(false);
-      }
-    } catch (err: any) {
-      console.error('[addFood]', err);
-    } finally {
-      setAddFoodLoading(false);
-    }
-  }, [data, initData, bridge]);
+  const {
+    state, error, data,
+    user, allLogs, todayLogs, vitamins, weekDays, target, frequentFoods,
+    selectedLog, showAddFood, addFoodLoading, addFoodError,
+    weightHistory, weightLoading, aiSubPage, userAllergies, referralData,
+    bridge, initData,
+    setSelectedLog, setShowAddFood, setAddFoodError, setAiSubPage,
+    simpleMode, toggleSimpleMode,
+    setData, setWeightHistory,
+    handleWaterChange, handleDeleteFood, handleAddFood, handleAddFoodPhoto,
+    handleConfirmPhoto, handleLogWeight, handleStreakFreeze,
+    handleActivatePromo, handleUpdateAllergies, handleCancelPhoto,
+  } = useAppData();
 
   // ── Render ──
 
@@ -303,27 +81,78 @@ export default function App() {
     );
   }
 
-  if (!data) return null;
+  if (!data || !user) return null;
 
-  const user = toUserProfile(data.user);
-  const allLogs = toFoodLogs(data.logs);
-  const todayStr = new Date().toISOString().split('T')[0];
-  const todayLogs = allLogs.filter(l => l.created_at.startsWith(todayStr));
-  const vitamins = toVitaminData(data.today_vitamins, data.norms);
-  const weekDays: WeekDay[] = data.week.map(d => ({
-    date: d.date, calories: d.calories, protein: d.protein,
-    fat: d.fat, carbs: d.carbs, logged: d.logged,
-  }));
+  const todayCalories = todayLogs.reduce((s, l) => s + l.calories, 0);
 
-  const target = {
-    calories: user.daily_calories,
-    protein: user.daily_protein,
-    fat: user.daily_fat,
-    carbs: user.daily_carbs,
-  };
+  if (simpleMode) {
+    return (
+      <>
+        <SimpleMode
+          logs={todayLogs}
+          calories={todayCalories}
+          caloriesTarget={target.calories}
+          water={data.user.water_glasses}
+          waterNorm={user.water_norm}
+          onAddFood={() => { setAddFoodError(''); setShowAddFood(true); }}
+          onWaterChange={handleWaterChange}
+          onExitSimple={() => toggleSimpleMode(false)}
+        />
+        {/* Modals in simple mode */}
+        {showAddFood && (
+          <AddFoodForm
+            loading={addFoodLoading}
+            externalError={addFoodError}
+            onSubmitText={handleAddFood}
+            onSubmitPhoto={handleAddFoodPhoto}
+            onConfirmPhoto={async (logId, editedItems, editedTotals) => {
+              if (initData) {
+                const items = editedItems?.map(i => ({
+                  name: i.name, portion_g: i.weight_g,
+                  calories: i.calories, protein: i.protein, fat: i.fat, carbs: i.carbs,
+                  is_drink: i.is_drink, volume_ml: i.volume_ml,
+                }));
+                await confirmFood(initData, logId, items, editedTotals);
+                try {
+                  const fresh = await authenticate(initData);
+                  setData(fresh);
+                  setWeightHistory(fresh.weight_history || []);
+                } catch { /* ignore */ }
+              }
+              bridge?.HapticFeedback?.notificationOccurred('success');
+              setShowAddFood(false);
+            }}
+            onCancelPhoto={handleCancelPhoto}
+            onClose={() => !addFoodLoading && setShowAddFood(false)}
+            frequentFoods={frequentFoods}
+            initData={initData || undefined}
+          />
+        )}
+      </>
+    );
+  }
 
   return (
     <>
+      {/* Floating home button */}
+      {page !== 'today' && (
+        <button
+          onClick={() => { setPage('today'); if (page === 'ai') setAiSubPage('menu'); }}
+          style={{
+            position: 'fixed', top: 12, right: 12, zIndex: 100,
+            width: 40, height: 40, borderRadius: 12,
+            background: 'rgba(26,26,46,0.9)', backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(124,58,237,0.2)',
+            color: 'var(--accent-purple)', fontSize: 16,
+            cursor: 'pointer', fontFamily: 'inherit',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          }}
+          title="На главную"
+        >
+          {'\ud83c\udfe0'}
+        </button>
+      )}
       <div className="page">
         {page === 'today' && (
           <>
@@ -336,7 +165,14 @@ export default function App() {
               xp={user.xp}
               level={user.level}
               onWaterChange={handleWaterChange}
-              onAddFood={() => setShowAddFood(true)}
+              onAddFood={() => { setAddFoodError(''); setShowAddFood(true); }}
+              onSelectLog={setSelectedLog}
+              onRepeatMeal={(text) => {
+                setAddFoodError('');
+                setShowAddFood(true);
+                // Slight delay to let form open, then auto-submit
+                setTimeout(() => handleAddFood(text), 100);
+              }}
             />
             <div style={{ marginTop: 10 }}>
               <VitaminChart vitamins={vitamins} />
@@ -350,10 +186,91 @@ export default function App() {
           <FoodDiary
             logs={allLogs}
             onSelect={setSelectedLog}
-            onAddFood={() => setShowAddFood(true)}
+            onAddFood={() => { setAddFoodError(''); setShowAddFood(true); }}
+            onRepeatMeal={(text) => {
+              setAddFoodError('');
+              setShowAddFood(true);
+              setTimeout(() => handleAddFood(text), 100);
+            }}
+            dailyTarget={target.calories}
           />
         )}
-        {page === 'week' && <WeeklyReport days={weekDays} target={target} />}
+        {page === 'ai' && (
+          <>
+            {aiSubPage === 'menu' && (
+              <div>
+                <div className="section-title">moonvit AI</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {[
+                    { id: 'chat' as AISubPage, icon: '💬', title: 'AI-нутрициолог', desc: 'Спроси о питании, витаминах, здоровье', color: 'var(--accent-purple)' },
+                    { id: 'deepconsult' as AISubPage, icon: '🔬', title: 'Глубокая консультация', desc: '4 AI-агента: полный разбор', color: '#f59e0b' },
+                    { id: 'recipes' as AISubPage, icon: '👨‍🍳', title: 'Рецепты', desc: 'Подбор блюд под твои дефициты', color: 'var(--pink)' },
+                    { id: 'mealplan' as AISubPage, icon: '📅', title: 'План питания', desc: 'На день или неделю по твоей норме', color: 'var(--accent-blue)' },
+                    { id: 'restaurant' as AISubPage, icon: '🍽️', title: 'Меню ресторана', desc: 'Фото меню → КБЖУ каждого блюда', color: '#10b981' },
+                    { id: 'lab' as AISubPage, icon: '🏥', title: 'Анализы крови', desc: 'Фото анализов → AI интерпретация', color: '#ef4444' },
+                    { id: 'week' as AISubPage, icon: '📊', title: 'Неделя', desc: 'Графики КБЖУ за 7 дней', color: 'var(--accent-cyan)' },
+                  ].map(item => (
+                    <div
+                      key={item.id}
+                      className="card"
+                      onClick={() => setAiSubPage(item.id)}
+                      style={{
+                        padding: '14px 16px', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: 14,
+                      }}
+                    >
+                      <div style={{
+                        width: 44, height: 44, borderRadius: 14,
+                        background: `${item.color}12`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 22, flexShrink: 0,
+                      }}>
+                        {item.icon}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>{item.title}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{item.desc}</div>
+                      </div>
+                      <div style={{ color: 'var(--text-secondary)', fontSize: 16 }}>›</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {aiSubPage !== 'menu' && (
+              <div>
+                <button
+                  onClick={() => setAiSubPage('menu')}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    background: 'none', border: 'none', color: 'var(--accent-purple)',
+                    fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
+                    padding: '4px 0', marginBottom: 8,
+                  }}
+                >
+                  ← Назад
+                </button>
+                <Suspense fallback={<div style={{ textAlign: 'center', padding: 20 }}><div className="loading-dots"><span /><span /><span /></div></div>}>
+                  {aiSubPage === 'recipes' && <RecipesPage initData={initData || 'dev'} />}
+                  {aiSubPage === 'mealplan' && <MealPlanPage initData={initData || 'dev'} />}
+                  {aiSubPage === 'chat' && <AIChat initData={initData || 'dev'} />}
+                  {aiSubPage === 'deepconsult' && <DeepConsultPage initData={initData || 'dev'} />}
+                  {aiSubPage === 'restaurant' && <RestaurantMenuPage initData={initData || 'dev'} />}
+                  {aiSubPage === 'lab' && <LabAnalysisPage initData={initData || 'dev'} />}
+                </Suspense>
+                {aiSubPage === 'week' && (
+                  <WeeklyReport
+                    days={weekDays}
+                    target={target}
+                    weekVitamins={data.today_vitamins}
+                    norms={data.norms}
+                  />
+                )}
+              </div>
+            )}
+          </>
+        )}
         {page === 'vitamins' && (
           <VitaminsPage
             vitamins={data.today_vitamins}
@@ -361,7 +278,40 @@ export default function App() {
             labResults={data.lab_results}
           />
         )}
-        {page === 'profile' && <ProfileCard user={user} />}
+        {page === 'profile' && (
+          <ProfileCard
+            user={user}
+            weightHistory={weightHistory.map(w => ({
+              id: w.id,
+              weight_kg: typeof w.weight_kg === 'number' ? w.weight_kg : parseFloat(String(w.weight_kg)),
+              note: w.note,
+              created_at: w.created_at,
+            }))}
+            onLogWeight={handleLogWeight}
+            weightLoading={weightLoading}
+            streakFreezeAvailable={data.user.streak_freeze_available}
+            onUseStreakFreeze={handleStreakFreeze}
+            totalLogs={allLogs.length}
+            waterGlasses={data.user.water_glasses}
+            photosUsed={data.user.photos_today}
+            onActivatePromo={handleActivatePromo}
+            onUpdateAllergies={handleUpdateAllergies}
+            allergies={userAllergies}
+            referralLink={referralData?.link}
+            referralTotal={referralData?.total}
+            referralActivated={referralData?.activated}
+            initData={initData || undefined}
+            onProfileUpdated={async () => {
+              if (initData) {
+                try {
+                  const fresh = await authenticate(initData);
+                  setData(fresh);
+                  setWeightHistory(fresh.weight_history || []);
+                } catch { /* ignore */ }
+              }
+            }}
+          />
+        )}
       </div>
 
       <div className="tab-bar">
@@ -371,6 +321,7 @@ export default function App() {
             className={page === p ? 'active' : ''}
             onClick={() => {
               setPage(p);
+              if (p === 'ai') setAiSubPage('menu');
               bridge?.HapticFeedback?.selectionChanged();
             }}
           >
@@ -389,14 +340,51 @@ export default function App() {
           norms={data.norms}
           onClose={() => setSelectedLog(null)}
           onDelete={handleDeleteFood}
+          onRepeat={(text) => {
+            setSelectedLog(null);
+            setAddFoodError('');
+            setShowAddFood(true);
+            setTimeout(() => handleAddFood(text), 100);
+          }}
+          initData={initData || undefined}
+          onUpdate={async () => {
+            if (initData) {
+              const fresh = await authenticate(initData);
+              setData(fresh);
+            }
+            setSelectedLog(null);
+          }}
         />
       )}
 
       {showAddFood && (
         <AddFoodForm
           loading={addFoodLoading}
-          onSubmit={handleAddFood}
+          externalError={addFoodError}
+          onSubmitText={handleAddFood}
+          onSubmitPhoto={handleAddFoodPhoto}
+          onConfirmPhoto={async (logId, editedItems, editedTotals) => {
+            if (initData) {
+              // Pass updated items and totals to backend
+              const items = editedItems?.map(i => ({
+                name: i.name, portion_g: i.weight_g,
+                calories: i.calories, protein: i.protein, fat: i.fat, carbs: i.carbs,
+                is_drink: i.is_drink, volume_ml: i.volume_ml,
+              }));
+              await confirmFood(initData, logId, items, editedTotals);
+              try {
+                const fresh = await authenticate(initData);
+                setData(fresh);
+                setWeightHistory(fresh.weight_history || []);
+              } catch { /* ignore */ }
+            }
+            bridge?.HapticFeedback?.notificationOccurred('success');
+            setShowAddFood(false);
+          }}
+          onCancelPhoto={handleCancelPhoto}
           onClose={() => !addFoodLoading && setShowAddFood(false)}
+          frequentFoods={frequentFoods}
+          initData={initData || undefined}
         />
       )}
     </>

@@ -1,5 +1,5 @@
 // POST /api/miniapp-auth — validate MAX Web App initData, return user + all data
-// Used by the NutriBot Mini App
+// Used by the Moonvit Mini App
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { validateInitData } from '../src/utils/miniapp-validate.js';
@@ -121,6 +121,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .order('created_at', { ascending: false })
       .limit(5);
 
+    // ── Get weight history (last 90 days) ──
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 86400000).toISOString();
+    const { data: weightHistory } = await supabase
+      .from('nutri_weight_logs')
+      .select('id, weight_kg, note, created_at')
+      .eq('user_id', user.id)
+      .gte('created_at', ninetyDaysAgo)
+      .order('created_at', { ascending: true })
+      .limit(90);
+
     // ── Response ──
     return res.status(200).json({
       ok: true,
@@ -142,6 +152,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         streak_days: user.streak_days || 0,
         subscription_type: user.subscription_type,
         onboarding_completed: user.onboarding_completed,
+        streak_freeze_available: user.streak_freeze_available || 0,
+        photos_today: user.photos_today || 0,
       },
       logs: logs.map(l => ({
         id: l.id,
@@ -160,6 +172,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       week,
       norms,
       lab_results: labResults || [],
+      weight_history: weightHistory || [],
     });
   } catch (err: any) {
     console.error('[miniapp-auth] Error:', err?.message || err);

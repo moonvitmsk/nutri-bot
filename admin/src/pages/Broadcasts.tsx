@@ -24,8 +24,8 @@ const AUDIENCE_OPTIONS: { value: Audience; label: string; desc: string }[] = [
 const TEMPLATES = [
   { label: 'Полезный факт о витамине D', text: 'Знаешь, что 80% россиян испытывают дефицит витамина D? Особенно зимой. Лосось, яйца и грибы — лучшие источники. А ещё — Moonvit Энергия и иммунитет с D3.\n\nОтправь фото еды — я посчитаю калории!' },
   { label: 'Мотивация к дневнику', text: 'Привет! Напоминаю: те, кто ведёт дневник питания, худеют на 50% эффективнее. Просто сфотографируй свой обед — я всё посчитаю за секунду.\n\nОтправь фото еды!' },
-  { label: 'Новая функция: рецепты', text: 'Обновление! Теперь NutriBot подбирает персональные рецепты на основе твоих дефицитов и отправляет красивую инфографику. Нажми 🍳 Рецепты в меню!' },
-  { label: 'Промо Moonvit', text: 'Moonvit — витамины нового поколения. 6 формул для здоровья, энергии и красоты. Сканируй QR-код под крышкой и получи 30 дней Premium в NutriBot!\n\nmoonvit.ru' },
+  { label: 'Новая функция: рецепты', text: 'Обновление! Теперь Moonvit подбирает персональные рецепты на основе твоих дефицитов и отправляет красивую инфографику. Нажми 🍳 Рецепты в меню!' },
+  { label: 'Промо Moonvit', text: 'Moonvit — витамины нового поколения. 6 формул для здоровья, энергии и красоты. Сканируй QR-код под крышкой и получи 30 дней Premium в Moonvit!\n\nmoonvit.ru' },
 ]
 
 const BOT_URL = import.meta.env.VITE_BOT_URL || ''
@@ -225,7 +225,7 @@ export default function Broadcasts() {
                   <Radio className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold">NutriBot</p>
+                  <p className="text-xs font-semibold">Moonvit</p>
                   <p className="text-[10px] text-gray-400">рассылка</p>
                 </div>
               </div>

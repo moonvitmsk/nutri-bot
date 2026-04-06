@@ -99,7 +99,7 @@ export async function handleCommand(user: NutriUser, command: string, chatId: nu
     case '/week': {
       const [logs, prevLogs] = await Promise.all([getWeekLogs(user.id), getPrevWeekLogs(user.id)]);
       if (!logs.length) {
-        await sendMessage(chatId, 'За неделю нет записей.', await mainMenu());
+        await sendMessage(chatId, await getMsg('msg_no_week_records'), await mainMenu());
         return;
       }
       const totalCal = logs.reduce((s, l) => s + (l.calories || 0), 0);
@@ -177,7 +177,7 @@ export async function handleCommand(user: NutriUser, command: string, chatId: nu
         // H-1: Show tariff plans
         const remaining = sub === 'free' ? `\n\nТекущий: Бесплатный (${10 - ((user as any).free_analyses_used || 0)} анализов осталось)` : `\nТекущий: Trial`;
         await sendMessage(chatId, [
-          'Тарифы NutriBot:',
+          'Тарифы Moonvit:',
           '',
           'Free — 10 анализов фото, AI-чат',
           'Basic — шаринг телефона → 30 дней без лимитов',
@@ -195,7 +195,7 @@ export async function handleCommand(user: NutriUser, command: string, chatId: nu
     case '/promo': {
       const code = command.split(' ').slice(1).join(' ').trim();
       if (!code) {
-        await sendMessage(chatId, 'Введи промо-код: /promo ТВОЙ_КОД');
+        await sendMessage(chatId, await getMsg('msg_promo_prompt'));
         return;
       }
       const result = await activatePromoCode(user.id, code);
@@ -293,15 +293,17 @@ export async function handleCommand(user: NutriUser, command: string, chatId: nu
       // H-3: Referral system
       const link = `https://max.ru/moonvit_bot?startapp=ref_${user.max_user_id}`;
       const refStats = await getReferralStats(user.id);
+      const lvl = refStats.level;
       await sendMessage(chatId, [
-        '🎁 Пригласи друга в NutriBot!',
+        '\u{1F381} Пригласи друга в Moonvit!',
         '',
         `Твоя ссылка: ${link}`,
         '',
-        'Когда друг перейдёт и начнёт пользоваться — вы оба получите +7 дней Premium!',
+        `Уровень: ${lvl.name} | ${lvl.reward}`,
+        lvl.next > 0 ? `До следующего уровня: ${lvl.next} приглашений` : '',
         '',
-        refStats.total > 0 ? `Приглашено: ${refStats.total} | Активировано: ${refStats.activated}` : 'Пока никого не пригласил — поделись ссылкой!',
-      ].join('\n'), await mainMenu());
+        refStats.total > 0 ? `Приглашено: ${refStats.total} | Активировано: ${refStats.activated}` : 'Пока никого не пригласил \u{2014} поделись ссылкой!',
+      ].filter(Boolean).join('\n'), await mainMenu());
       break;
     }
 
@@ -333,7 +335,7 @@ export async function handleCommand(user: NutriUser, command: string, chatId: nu
     case '/delfood': {
       const todayLogs = await getTodayLogs(user.id);
       if (!todayLogs.length) {
-        await sendMessage(chatId, 'Сегодня нет записей для удаления.', await mainMenu());
+        await sendMessage(chatId, await getMsg('msg_no_today_records'), await mainMenu());
         return;
       }
       const numArg = command.split(' ')[1];
@@ -358,7 +360,7 @@ export async function handleCommand(user: NutriUser, command: string, chatId: nu
       const foodText = command.slice('/addfood '.length).trim();
       if (!foodText) {
         await setContextState(user.id, 'awaiting_food_text');
-        await sendMessage(chatId, 'Опиши, что ты ел — например: «два яйца, тост с маслом, кофе с молоком». Или отправь фото.');
+        await sendMessage(chatId, await getMsg('msg_addfood_prompt'));
         return;
       }
       // If text provided inline, analyze it
@@ -368,46 +370,48 @@ export async function handleCommand(user: NutriUser, command: string, chatId: nu
       break;
     }
 
-    case '/help':
-      await sendMessage(chatId, [
-        'Команды:',
-        '/start — главное меню',
-        '/profile — твой профиль',
-        '/today — дневник за сегодня',
-        '/week — статистика за неделю',
-        '/water — записать стакан воды',
-        '/mealplan — план питания',
-        '/recipes — рецепты под твой профиль',
-        '/deepcheck — глубокая консультация',
-        '/lab — анализ результатов анализов',
-        '/addfood — записать еду текстом',
-        '/delfood N — удалить запись из дневника',
-        '/subscribe — подписка и тарифы',
-        '/promo КОД — активировать промо-код',
-        '/allergy — управление аллергиями',
-        '/stats — личная статистика',
-        '/invite — пригласить друга',
-        '/reminders — настройки напоминаний',
-        '/reset — очистить историю',
-        '/deletedata — удалить все данные',
-        '',
-        'Или просто отправь фото еды, голосовое или напиши вопрос!' + disclaimer(),
-      ].join('\n'));
+    case '/help': {
+      const helpText = `Что я умею:\n\n📸 Отправь фото еды — определю КБЖУ\n✍️ Напиши "овсянка 200г" — посчитаю\n🎙 Отправь голосовое — тоже считаю\n\n🔥 /today — итоги дня\n📊 /stats — статистика за неделю\n👤 /profile — твой профиль\n💧 /water — выпить стакан воды\n\nAI-функции:\n🔬 /deepcheck — глубокая консультация\n👨‍🍳 /recipes — подбор рецептов\n📅 /mealplan — план питания\n🍽 /restaurant — анализ меню ресторана\n🏥 /lab — анализ анализов крови\n\n📱 Открой мини-приложение для удобного интерфейса!`;
+
+      await sendMessage(chatId, helpText, [
+        [
+          { type: 'callback', text: '📸 Записать еду', payload: 'action_addfood' },
+          { type: 'callback', text: '📊 Итоги дня', payload: 'action_today' },
+        ],
+        [
+          { type: 'callback', text: '🔬 Консультация', payload: 'action_deepcheck' },
+          { type: 'callback', text: '👨‍🍳 Рецепты', payload: 'action_recipes' },
+        ],
+        [
+          { type: 'callback', text: '👤 Профиль', payload: 'action_profile' },
+          { type: 'callback', text: '💧 Вода', payload: 'action_water' },
+        ],
+      ]);
       break;
+    }
 
     case '/reset':
       await deleteUserMessages(user.id);
-      await sendMessage(chatId, 'История сообщений очищена.', await mainMenu());
+      await sendMessage(chatId, await getMsg('msg_history_cleared'), await mainMenu());
       break;
 
     case '/deletedata':
-      await sendMessage(chatId, 'Ты уверен? Все данные (профиль, история, анализы) будут удалены безвозвратно.', [
+      await sendMessage(chatId, await getMsg('msg_delete_confirm'), [
         [{ type: 'callback', text: 'Да, удалить всё', payload: 'confirm_delete' }],
         [{ type: 'callback', text: 'Отмена', payload: 'cancel_delete' }],
       ]);
       break;
 
+    case '/webapp':
+    case '/app': {
+      await sendMessage(chatId, await getMsg('msg_webapp_full'), [
+        [{ type: 'callback', text: '📱 Открыть приложение', payload: 'action_open_webapp' }],
+        ...(await mainMenu()),
+      ]);
+      break;
+    }
+
     default:
-      await sendMessage(chatId, 'Неизвестная команда. Напиши /help для списка команд.');
+      await sendMessage(chatId, await getMsg('msg_unknown_command'));
   }
 }

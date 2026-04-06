@@ -6,6 +6,24 @@ import { validateInitData } from '../../src/utils/miniapp-validate.js';
 import { config } from '../../src/config.js';
 import { supabase } from '../../src/db/supabase.js';
 
+// ── In-memory rate limiter ──
+const rateLimit = new Map<string, { count: number; reset: number }>();
+
+export function checkRateLimit(userId: string, limit = 30, windowMs = 60000): boolean {
+  const now = Date.now();
+  const entry = rateLimit.get(userId);
+
+  if (!entry || now > entry.reset) {
+    rateLimit.set(userId, { count: 1, reset: now + windowMs });
+    return true;
+  }
+
+  if (entry.count >= limit) return false;
+
+  entry.count++;
+  return true;
+}
+
 export function cors(res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');

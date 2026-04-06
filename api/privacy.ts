@@ -5,13 +5,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   return res.status(200).send(`<!DOCTYPE html>
 <html lang="ru">
-<head><meta charset="utf-8"><title>Политика обработки персональных данных — NutriBot Moonvit</title>
+<head><meta charset="utf-8"><title>Политика обработки персональных данных — Moonvit — AI-нутрициолог</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>body{font-family:system-ui,-apple-system,sans-serif;max-width:700px;margin:40px auto;padding:0 20px;line-height:1.6;color:#333}h1{font-size:1.3em}h2{font-size:1.1em;margin-top:2em}ul{padding-left:1.2em}table{border-collapse:collapse;width:100%;margin:1em 0}td,th{border:1px solid #ddd;padding:8px;text-align:left;font-size:0.9em}th{background:#f5f5f5}</style></head>
 <body>
 <h1>Политика обработки персональных данных</h1>
 <p><strong>Оператор:</strong> ИП Герастовский Александр Константинович (бренд Moonvit)<br>
-<strong>Бот:</strong> NutriBot (@id7730325082_bot) в мессенджере MAX<br>
+<strong>Бот:</strong> Moonvit (@id7730325082_bot) в мессенджере MAX<br>
 <strong>Дата вступления в силу:</strong> 01.04.2026<br>
 <strong>Последнее обновление:</strong> 03.04.2026</p>
 

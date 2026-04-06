@@ -13,7 +13,7 @@ function isValidUpdate(u: any): u is MaxUpdate {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'GET') {
-    return res.status(200).json({ status: 'ok', bot: 'NutriBot Moonvit' });
+    return res.status(200).json({ status: 'ok', bot: 'Moonvit' });
   }
 
   if (req.method !== 'POST') {

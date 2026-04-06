@@ -1,11 +1,11 @@
 import { getSetting } from '../db/settings.js';
 import type { NutriUser } from '../max/types.js';
 import { getAllProducts } from '../db/products.js';
-import { CHAT_SYSTEM_BASE, CHAT_ED_SAFE_RULES, CHAT_UNDERAGE_RULES } from '../prompts/chat-system.js';
+import { CHAT_SYSTEM_BASE, CHAT_ED_SAFE_RULES, CHAT_UNDERAGE_RULES, getChatSystemPrompt } from '../prompts/chat-system.js';
 import { FOOD_ANALYSIS_SYSTEM_PROMPT } from '../prompts/food-analysis.js';
 import { RESTAURANT_MENU_PROMPT } from '../prompts/restaurant-menu.js';
 import { LAB_ANALYSIS_PROMPT, SUPPLEMENT_OCR_PROMPT as OCR_PROMPT_NEW } from '../prompts/supplement-ocr.js';
-import { AGENT_PROMPTS, CONTEXT_SUMMARY_PROMPT, QUALITY_CHECK_PROMPT, ONBOARDING_GREETING_PROMPT } from '../prompts/agents.js';
+import { AGENT_PROMPTS, CONTEXT_SUMMARY_PROMPT, QUALITY_CHECK_PROMPT, ONBOARDING_GREETING_PROMPT, getOnboardingGreetingForAge } from '../prompts/agents.js';
 
 export async function getSystemPrompt(user: NutriUser): Promise<string> {
   const products = await getAllProducts();
@@ -25,7 +25,7 @@ export async function getSystemPrompt(user: NutriUser): Promise<string> {
   ].filter(Boolean).join('\n') : 'Профиль не заполнен.';
 
   return [
-    CHAT_SYSTEM_BASE,
+    getChatSystemPrompt(user.age),
     '',
     'ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ:',
     userProfile,
@@ -63,8 +63,8 @@ export function getQualityCheckPrompt(): string {
   return QUALITY_CHECK_PROMPT;
 }
 
-export function getOnboardingGreetingPrompt(): string {
-  return ONBOARDING_GREETING_PROMPT;
+export function getOnboardingGreetingPrompt(userAge?: number | null): string {
+  return getOnboardingGreetingForAge(userAge);
 }
 
 function goalLabel(goal: string | null): string {

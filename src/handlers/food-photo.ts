@@ -3,7 +3,7 @@ import { sendMessage } from '../max/api.js';
 import { updateUser } from '../db/users.js';
 import { saveFoodLog, deleteUnconfirmedLogs } from '../db/food-logs.js';
 import { saveMessage } from '../db/messages.js';
-import { canUseFeature, getFreeAnalysesRemaining, getSubscriptionStatus, needsPhoneSharing } from '../db/subscriptions.js';
+import { canUseFeature, getPhotosRemaining, getSubscriptionStatus, needsPhoneSharing } from '../db/subscriptions.js';
 import { analyzeFoodPhoto } from '../ai/vision.js';
 import { confirmFood, mainMenu } from '../max/keyboard.js';
 import { featureLocked, truncate } from '../utils/formatter.js';
@@ -79,13 +79,11 @@ export async function handleFoodPhoto(user: NutriUser, chatId: number, imageUrl:
     }
     await updateUser(user.id, updates);
 
-    // A-4: Show remaining free analyses for free users
+    // Show remaining daily photo analyses
     let extra = '';
-    if (sub === 'free') {
-      const remaining = getFreeAnalysesRemaining(user) - 1; // -1 because we just used one
-      if (remaining > 0 && remaining <= 5) {
-        extra = `\n\n_Осталось ${remaining} из 10 бесплатных анализов_`;
-      }
+    const remaining = getPhotosRemaining({ ...user, photos_today: user.photos_today + 1 });
+    if (remaining >= 0 && remaining <= 3) {
+      extra = `\n\n_Осталось ${remaining} фото-анализов на сегодня_`;
     }
     await sendMessage(chatId, truncate(msg + extra), confirmFood());
   } catch (err) {

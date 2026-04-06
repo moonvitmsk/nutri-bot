@@ -100,7 +100,7 @@ export async function handleCallback(user: NutriUser, cb: MaxCallback) {
         return;
       }
       await setContextState(user.id, 'awaiting_deepcheck_request');
-      await sendMessage(chatId, 'Напиши, что хочешь узнать — я подготовлю консультацию именно по этому вопросу:');
+      await sendMessage(chatId, await getMsg('msg_deep_custom_prompt'));
       break;
 
     case 'action_lab':
@@ -153,7 +153,7 @@ export async function handleCallback(user: NutriUser, cb: MaxCallback) {
       break;
 
     case 'action_promo':
-      await sendMessage(chatId, 'Введи промо-код: /promo ТВОЙ_КОД');
+      await sendMessage(chatId, await getMsg('msg_promo_prompt'));
       break;
 
     case 'action_allergy':
@@ -180,13 +180,21 @@ export async function handleCallback(user: NutriUser, cb: MaxCallback) {
       await handleCommand(user, '/addfood', chatId);
       break;
 
+    case 'action_deepcheck':
+      await handleCommand(user, '/deepcheck', chatId);
+      break;
+
+    case 'action_open_webapp':
+      await sendMessage(chatId, await getMsg('msg_webapp_open'), await mainMenu());
+      break;
+
     case 'action_delfood':
       await handleCommand(user, '/delfood', chatId);
       break;
 
     case 'edit_name':
       await setContextState(user.id, 'editing_name');
-      await sendMessage(chatId, 'Введи новое имя:');
+      await sendMessage(chatId, await getMsg('msg_edit_name_prompt'));
       break;
 
     case 'edit_sex':
@@ -196,27 +204,27 @@ export async function handleCallback(user: NutriUser, cb: MaxCallback) {
 
     case 'edit_birth':
       await setContextState(user.id, 'editing_birth');
-      await sendMessage(chatId, 'Введи дату рождения (например, 15.03.1990) или возраст:');
+      await sendMessage(chatId, await getMsg('msg_edit_birth_prompt'));
       break;
 
     case 'edit_height':
       await setContextState(user.id, 'editing_height');
-      await sendMessage(chatId, 'Введи рост в см (100-250):');
+      await sendMessage(chatId, await getMsg('msg_edit_height_prompt'));
       break;
 
     case 'edit_weight':
       await setContextState(user.id, 'editing_weight');
-      await sendMessage(chatId, 'Введи вес в кг (30-300):');
+      await sendMessage(chatId, await getMsg('msg_edit_weight_prompt'));
       break;
 
     case 'edit_goal':
       await updateUser(user.id, { context_state: 'editing_goal' } as any);
-      await sendMessage(chatId, 'Выбери цель:', onboardingGoal());
+      await sendMessage(chatId, await getMsg('msg_edit_goal_prompt'), onboardingGoal());
       break;
 
     case 'edit_goal_text':
       await setContextState(user.id, 'editing_goal_text');
-      await sendMessage(chatId, 'Напиши свою цель — например: «похудеть на 5 кг к лету» или «набрать мышечную массу»:');
+      await sendMessage(chatId, await getMsg('msg_edit_goal_text_prompt'));
       break;
 
     case 'confirm_food': {
@@ -232,7 +240,7 @@ export async function handleCallback(user: NutriUser, cb: MaxCallback) {
         ].join('\n');
         await sendMessage(chatId, reply, smartRepliesAfterFood());
       } else {
-        await sendMessage(chatId, 'Нечего сохранять.', await mainMenu());
+        await sendMessage(chatId, await getMsg('msg_nothing_to_save'), await mainMenu());
       }
       break;
     }
@@ -243,7 +251,7 @@ export async function handleCallback(user: NutriUser, cb: MaxCallback) {
         const analysis = log.ai_analysis as any;
         const items = analysis?.items || [];
         if (items.length === 0) {
-          await sendMessage(chatId, 'Нечего редактировать.', await mainMenu());
+          await sendMessage(chatId, await getMsg('msg_nothing_to_edit'), await mainMenu());
           break;
         }
         const lines = items.map((item: any, i: number) =>
@@ -289,12 +297,12 @@ export async function handleCallback(user: NutriUser, cb: MaxCallback) {
 
     case 'recipe_photo':
       await setContextState(user.id, 'awaiting_recipe_photo');
-      await sendMessage(chatId, 'Сфотографируй продукты, которые у тебя есть — я предложу рецепты из них!');
+      await sendMessage(chatId, await getMsg('msg_recipe_photo_prompt'));
       break;
 
     case 'recipe_custom':
       await setContextState(user.id, 'awaiting_recipe_request');
-      await sendMessage(chatId, 'Напиши, какие продукты есть или что хочется приготовить:');
+      await sendMessage(chatId, await getMsg('msg_recipe_custom_prompt'));
       break;
 
     case 'action_mealplan': {
@@ -314,22 +322,22 @@ export async function handleCallback(user: NutriUser, cb: MaxCallback) {
 
     case 'mealplan_custom':
       await setContextState(user.id, 'awaiting_mealplan_request');
-      await sendMessage(chatId, 'Напиши, что тебе нужно — например: «план на 3 дня без глютена» или «лёгкий ужин на двоих»:');
+      await sendMessage(chatId, await getMsg('msg_mealplan_custom_prompt'));
       break;
       break;
 
     case 'cancel_food':
       await setContextState(user.id, 'idle');
-      await sendMessage(chatId, 'Отменено.', await mainMenu());
+      await sendMessage(chatId, await getMsg('msg_cancelled'), await mainMenu());
       break;
 
     case 'confirm_delete':
       await deleteUserData(user.id);
-      await sendMessage(chatId, 'Все данные удалены. Напиши /start чтобы начать заново.');
+      await sendMessage(chatId, await getMsg('msg_data_deleted'));
       break;
 
     case 'cancel_delete':
-      await sendMessage(chatId, 'Удаление отменено.', await mainMenu());
+      await sendMessage(chatId, await getMsg('msg_delete_cancelled'), await mainMenu());
       break;
 
     // D-4: Reminder toggles
@@ -380,7 +388,7 @@ export async function handleCallback(user: NutriUser, cb: MaxCallback) {
           await deleteFoodLog(logToDel.id, user.id);
           await sendMessage(chatId, `Удалено: ${logToDel.description || 'запись'}`, await mainMenu());
         } else {
-          await sendMessage(chatId, 'Запись не найдена.', await mainMenu());
+          await sendMessage(chatId, await getMsg('msg_record_not_found'), await mainMenu());
         }
         return;
       }

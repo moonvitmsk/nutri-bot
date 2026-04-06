@@ -1,11 +1,24 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import type { FoodLog } from '../types';
+import { editFoodLog } from '../lib/api';
 
 interface Props {
   log: FoodLog;
   norms: Record<string, { name: string; unit: string; daily: number }>;
   onClose: () => void;
   onDelete: (id: string) => void;
+  onRepeat?: (text: string) => void;
+  initData?: string;
+  onUpdate?: () => void;
+}
+
+function getMealCategory(dateStr: string): string {
+  const h = new Date(dateStr).getHours();
+  if (h >= 5 && h < 11) return 'Завтрак';
+  if (h >= 11 && h < 15) return 'Обед';
+  if (h >= 15 && h < 18) return 'Перекус';
+  if (h >= 18 && h < 23) return 'Ужин';
+  return 'Перекус';
 }
 
 function getColor(pct: number): string {
@@ -14,10 +27,40 @@ function getColor(pct: number): string {
   return 'var(--red)';
 }
 
-export default function MealDetail({ log, norms, onClose, onDelete }: Props) {
+const CATEGORIES = ['Завтрак', 'Обед', 'Перекус', 'Ужин'] as const;
+
+export default function MealDetail({ log, norms, onClose, onDelete, onRepeat, initData, onUpdate }: Props) {
   const micro = log.micronutrients || {};
   const items = log.items || [];
   const hasMicro = Object.keys(micro).length > 0;
+
+  const [editing, setEditing] = useState(false);
+  const [editCategory, setEditCategory] = useState(() => getMealCategory(log.created_at));
+  const [editTime, setEditTime] = useState(() =>
+    new Date(log.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', hour12: false }),
+  );
+  const [saving, setSaving] = useState(false);
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!initData || saving) return;
+    setSaving(true);
+    try {
+      // Build a new created_at from the edited time + category-based hour mapping
+      const [hh, mm] = editTime.split(':').map(Number);
+      const d = new Date(log.created_at);
+      d.setHours(hh, mm, 0, 0);
+      await editFoodLog(initData, log.id, {
+        created_at: d.toISOString(),
+        category: editCategory,
+      });
+      setEditing(false);
+      onUpdate?.();
+    } catch (err) {
+      console.error('[edit-food]', err);
+    } finally {
+      setSaving(false);
+    }
+  }, [initData, saving, editTime, editCategory, log.created_at, log.id, onUpdate]);
 
   return (
     <div
@@ -65,26 +108,118 @@ export default function MealDetail({ log, norms, onClose, onDelete }: Props) {
           <div>
             <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>{log.description}</div>
             <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-              {new Date(log.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+              {getMealCategory(log.created_at)} · {new Date(log.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
             </div>
           </div>
-          <button
-            onClick={() => { if (confirm('Удалить запись?')) onDelete(log.id); }}
-            style={{
-              background: 'rgba(248,113,113,0.1)',
-              border: '1px solid rgba(248,113,113,0.2)',
-              borderRadius: 10,
-              padding: '6px 12px',
-              color: 'var(--red)',
-              fontSize: 12,
-              fontWeight: 500,
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-            }}
-          >
-            Удалить
-          </button>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {initData && (
+              <button
+                onClick={() => setEditing(!editing)}
+                style={{
+                  background: editing ? 'rgba(96,165,250,0.15)' : 'rgba(96,165,250,0.1)',
+                  border: '1px solid rgba(96,165,250,0.2)',
+                  borderRadius: 10,
+                  padding: '6px 12px',
+                  color: 'var(--accent-blue)',
+                  fontSize: 12,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
+              >
+                {editing ? 'Отмена' : 'Изменить'}
+              </button>
+            )}
+            {onRepeat && log.description && (
+              <button
+                onClick={() => { onRepeat(log.description); onClose(); }}
+                style={{
+                  background: 'rgba(124,58,237,0.1)',
+                  border: '1px solid rgba(124,58,237,0.2)',
+                  borderRadius: 10,
+                  padding: '6px 12px',
+                  color: 'var(--accent-purple)',
+                  fontSize: 12,
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
+              >
+                Повторить
+              </button>
+            )}
+            <button
+              onClick={() => { if (confirm('Удалить запись?')) onDelete(log.id); }}
+              style={{
+                background: 'rgba(248,113,113,0.1)',
+                border: '1px solid rgba(248,113,113,0.2)',
+                borderRadius: 10,
+                padding: '6px 12px',
+                color: 'var(--red)',
+                fontSize: 12,
+                fontWeight: 500,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              Удалить
+            </button>
+          </div>
         </div>
+
+        {/* Edit mode */}
+        {editing && (
+          <div style={{
+            marginBottom: 16, padding: '12px 14px', borderRadius: 14,
+            background: 'rgba(96,165,250,0.06)',
+            border: '1px solid rgba(96,165,250,0.15)',
+          }}>
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>Время</div>
+              <input
+                type="time"
+                value={editTime}
+                onChange={e => setEditTime(e.target.value)}
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 10, padding: '8px 12px',
+                  color: 'var(--text-primary)', fontSize: 14,
+                  fontFamily: "'JetBrains Mono', monospace",
+                  outline: 'none', width: '100%',
+                }}
+              />
+            </div>
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>Категория</div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {CATEGORIES.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setEditCategory(cat)}
+                    style={{
+                      flex: 1, padding: '8px 4px', borderRadius: 10,
+                      border: `1px solid ${editCategory === cat ? 'rgba(96,165,250,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                      background: editCategory === cat ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.03)',
+                      color: editCategory === cat ? 'var(--accent-blue)' : 'var(--text-secondary)',
+                      fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+                    }}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button
+              onClick={handleSaveEdit}
+              disabled={saving}
+              className="btn-primary"
+              style={{ width: '100%', padding: '10px', opacity: saving ? 0.5 : 1 }}
+            >
+              {saving ? 'Сохраняю...' : 'Сохранить'}
+            </button>
+          </div>
+        )}
 
         {/* KBJU */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>

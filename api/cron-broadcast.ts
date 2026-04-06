@@ -47,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { text } = await chatCompletion([
         {
           role: 'system',
-          content: 'Ты AI-нутрициолог NutriBot от Moonvit. Стиль: дружеский, дерзкий но полезный. Напиши короткий пост (3-5 предложений) на тему ниже. В конце: "Отправь фото еды — я посчитаю калории!"',
+          content: 'Ты AI-нутрициолог Moonvit. Стиль: дружеский, дерзкий но полезный. Напиши короткий пост (3-5 предложений) на тему ниже. В конце: "Отправь фото еды — я посчитаю калории!"',
         },
         { role: 'user', content: `Тема: ${customTopic}` },
       ], 'gpt-4.1-nano');
@@ -84,6 +84,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       usersQuery = usersQuery.eq('subscription_type', 'trial');
     } else if (audienceFilter === 'premium') {
       usersQuery = usersQuery.eq('subscription_type', 'premium');
+    } else if (audienceFilter === 'active_3days') {
+      const threeDaysAgo = new Date(Date.now() - 3 * 86400000).toISOString();
+      usersQuery = usersQuery.gte('last_active_at', threeDaysAgo);
+    } else if (audienceFilter === 'inactive_3days') {
+      const threeDaysAgo = new Date(Date.now() - 3 * 86400000).toISOString();
+      usersQuery = usersQuery.lt('last_active_at', threeDaysAgo);
+    } else if (audienceFilter === 'goal_lose') {
+      usersQuery = usersQuery.eq('goal', 'lose');
+    } else if (audienceFilter === 'new_7d') {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+      usersQuery = usersQuery.gte('created_at', sevenDaysAgo);
     }
 
     const { data: users } = await usersQuery;

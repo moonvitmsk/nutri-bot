@@ -72,7 +72,7 @@ function LoginScreen({ onLogin }: { onLogin: () => void }) {
         </div>
 
         <h1 className="text-2xl font-bold text-center mb-1 bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent">
-          NutriBot Admin
+          Moonvit Admin
         </h1>
         <p className="text-sm text-gray-400 text-center mb-8">Панель управления Moonvit</p>
 

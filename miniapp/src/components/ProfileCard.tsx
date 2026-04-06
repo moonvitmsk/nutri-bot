@@ -59,18 +59,14 @@ export default function ProfileCard({ user, weightHistory, onLogWeight, weightLo
 
   // Settings: font size, zoom, theme
   const [fontSize, setFontSize] = useState(() => parseInt(localStorage.getItem('mv_font') || '22'));
-  const [zoomLevel, setZoomLevel] = useState(() => parseFloat(localStorage.getItem('mv_zoom') || '1.15'));
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('mv_theme') !== 'light');
+  const [darkMode, setDarkMode] = useState(() => {
+    try { return localStorage.getItem('mv_theme') !== 'light'; } catch { return true; }
+  });
 
   useEffect(() => {
     document.documentElement.style.fontSize = fontSize + 'px';
-    localStorage.setItem('mv_font', String(fontSize));
+    try { localStorage.setItem('mv_font', String(fontSize)); } catch {}
   }, [fontSize]);
-
-  useEffect(() => {
-    document.body.style.zoom = String(zoomLevel);
-    localStorage.setItem('mv_zoom', String(zoomLevel));
-  }, [zoomLevel]);
 
   useEffect(() => {
     if (darkMode) {
@@ -500,22 +496,6 @@ export default function ProfileCard({ user, weightHistory, onLogWeight, weightLo
           />
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-secondary)' }}>
             <span>Мелкий</span><span>Крупный</span>
-          </div>
-        </div>
-
-        {/* Zoom slider */}
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-            <span style={{ fontSize: 13 }}>Масштаб</span>
-            <span style={{ fontSize: 12, fontFamily: "'JetBrains Mono', monospace", color: 'var(--accent-blue)' }}>{Math.round(zoomLevel * 100)}%</span>
-          </div>
-          <input
-            type="range" min="0.85" max="1.5" step="0.05" value={zoomLevel}
-            onChange={e => setZoomLevel(Number(e.target.value))}
-            style={{ width: '100%', accentColor: 'var(--accent-blue)' }}
-          />
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-secondary)' }}>
-            <span>85%</span><span>150%</span>
           </div>
         </div>
 

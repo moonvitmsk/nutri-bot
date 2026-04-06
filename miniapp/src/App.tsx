@@ -46,14 +46,15 @@ const labels: Record<Page, string> = {
 export default function App() {
   const [page, setPage] = useState<Page>('today');
 
-  // Restore saved display settings
+  // Restore saved display settings (defensive)
   useEffect(() => {
-    const font = localStorage.getItem('mv_font');
-    const zoom = localStorage.getItem('mv_zoom');
-    const theme = localStorage.getItem('mv_theme');
-    if (font) document.documentElement.style.fontSize = font + 'px';
-    if (zoom) document.body.style.zoom = zoom;
-    if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    try {
+      const font = localStorage.getItem('mv_font');
+      const theme = localStorage.getItem('mv_theme');
+      if (font) { const f = parseInt(font); if (f >= 14 && f <= 30) document.documentElement.style.fontSize = f + 'px'; }
+      if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+      // Note: zoom removed - not supported in all WebViews
+    } catch { /* localStorage may be unavailable */ }
   }, []);
 
   const {

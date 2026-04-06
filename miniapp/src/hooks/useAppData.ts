@@ -212,6 +212,21 @@ export function useAppData() {
     init();
   }, []);
 
+  // Auto-refresh data every 60s when app is visible
+  useEffect(() => {
+    if (!bridge?.initData) return;
+    const refresh = async () => {
+      if (document.hidden || state !== 'ready') return;
+      try {
+        const fresh = await authenticate(bridge.initData);
+        setData(fresh);
+        setWeightHistory(fresh.weight_history || []);
+      } catch { /* silent refresh */ }
+    };
+    const interval = setInterval(refresh, 60000);
+    return () => clearInterval(interval);
+  }, [state]);
+
   // ── Mutation handlers ──
 
   const handleWaterChange = useCallback(async (delta: number) => {

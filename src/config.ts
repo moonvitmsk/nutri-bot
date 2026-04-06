@@ -16,9 +16,9 @@ export const config = {
   freeTrialDays: parseInt(process.env.FREE_TRIAL_DAYS || '30'),
   limits: {
     messageMaxLength: 3800,
-    freeMessagesPerDay: 10,
-    trialPhotosPerDay: 3,
-    premiumPhotosPerDay: 20,
+    freeMessagesPerDay: 15,
+    trialPhotosPerDay: 15,
+    premiumPhotosPerDay: 30,
     trialDeepcheckDays: 30,
     premiumDeepcheckDays: 14,
     contextMessages: 10,

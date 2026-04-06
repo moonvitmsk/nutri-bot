@@ -17,8 +17,8 @@ export function getSubscriptionStatus(user: NutriUser): 'free' | 'trial' | 'prem
   return 'free';
 }
 
-// Photo limits: 5/day free, 10/day trial, 20/day premium
-const FREE_PHOTOS_PER_DAY = 5;
+// Photo limits: 8/day free, 15/day trial, 30/day premium
+const FREE_PHOTOS_PER_DAY = 8;
 
 export function canUseFeature(user: NutriUser, feature: 'chat' | 'photo' | 'lab' | 'deepcheck'): boolean {
   const sub = getSubscriptionStatus(user);

@@ -46,13 +46,18 @@ export async function startOnboarding(user: NutriUser, chatId: number) {
   // Send greeting as text (image cards disabled)
   await sendMessage(chatId, greeting);
 
-  // Contact request CTA (separate message with phone button)
+  // Contact request CTA (with skip option)
   const phoneReq = await getMsg('onboarding_phone_request');
   await sendContactRequest(chatId, [
     phoneReq,
     '',
+    '_Поделись номером для 30 дней Trial или нажми "Пропустить"._',
     '_Продолжая, ты соглашаешься с обработкой данных. /deletedata — удалить.' + disclaimer() + '_',
   ].join('\n'));
+  // Skip button as a separate message with inline keyboard
+  await sendMessage(chatId, 'Не хочешь делиться номером? Можно пропустить.', [
+    [{ type: 'callback', text: 'Пропустить, продолжить без Trial', payload: 'skip_phone' }],
+  ]);
 }
 
 /** Called when user shares phone at step 0 (phone-first flow) */
@@ -347,6 +352,13 @@ export async function handleOnboardingCallback(user: NutriUser, payload: string,
   }
   if (payload === 'consent_no') {
     await sendMessage(chatId, await getMsg('onboarding_consent_no'));
+    return;
+  }
+
+  // Skip phone sharing - proceed without Trial
+  if (payload === 'skip_phone') {
+    await updateUser(user.id, { onboarding_step: 1 } as any);
+    await sendMessage(chatId, 'Хорошо! Как тебя зовут?');
     return;
   }
 

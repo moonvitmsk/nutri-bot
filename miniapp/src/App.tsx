@@ -75,16 +75,23 @@ export default function App() {
   if (state === 'loading') return <LoadingScreen />;
 
   if (state === 'error') {
+    const isNoProfile = error?.includes('не найден') || error?.includes('not found') || error?.includes('404');
     return (
       <div className="page" style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh',
       }}>
         <div className="card" style={{ textAlign: 'center', padding: 32, maxWidth: 320 }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>:(</div>
-          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Не удалось загрузить</div>
-          <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>{error}</div>
+          <img src="/logo.png" alt="" style={{ width: 56, height: 56, borderRadius: '50%', marginBottom: 12 }} />
+          <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>
+            {isNoProfile ? 'Сначала запусти бот' : 'Не удалось загрузить'}
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
+            {isNoProfile
+              ? 'Открой бот moonvit в MAX и нажми "Запустить" для создания профиля'
+              : error}
+          </div>
           <button className="btn-primary" onClick={() => window.location.reload()}>
-            Попробовать снова
+            {isNoProfile ? 'Обновить' : 'Попробовать снова'}
           </button>
         </div>
       </div>

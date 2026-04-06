@@ -24,7 +24,7 @@ export async function handleCallback(user: NutriUser, cb: MaxCallback) {
     'consent_yes', 'consent_no',
     'profile_full', 'profile_short', 'profile_skip',
     'name_confirm', 'name_change',
-    'skip_to_profile',
+    'skip_phone', 'skip_to_profile',
   ];
   const isEditingSex = user.context_state === 'editing_sex' && payload.startsWith('sex_');
   const isEditingGoal = user.context_state === 'editing_goal' && payload.startsWith('goal_');

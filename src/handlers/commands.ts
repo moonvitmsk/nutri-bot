@@ -10,6 +10,7 @@ import { featureLocked, disclaimer } from '../utils/formatter.js';
 import { sendMessageWithImage, uploadImage } from '../max/api.js';
 import { generateReportGif } from '../services/report-image.js';
 import { trackError } from '../services/error-tracker.js';
+import { trackCommand } from '../db/events.js';
 import { startOnboarding } from './onboarding.js';
 import { handleDeepConsult } from './deep-consult.js';
 import { handleMealPlan } from './meal-plan.js';
@@ -23,6 +24,7 @@ import { supabase } from '../db/supabase.js';
 
 export async function handleCommand(user: NutriUser, command: string, chatId: number) {
   const cmd = command.split(' ')[0].toLowerCase();
+  trackCommand(user.id, cmd);
 
   switch (cmd) {
     case '/start':

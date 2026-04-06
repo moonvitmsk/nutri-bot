@@ -26,6 +26,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(429).json({ ok: false, error: 'Слишком много запросов. Подожди минуту.' });
     }
 
+    // ── Track event (fire-and-forget from miniapp) ──
+    if (req.body.trackEvent && typeof req.body.trackEvent === 'object') {
+      const { event, category, meta } = req.body.trackEvent;
+      if (typeof event === 'string') {
+        await supabase.from('nutri_user_events').insert({
+          user_id: auth.user.id,
+          event,
+          category: category || 'screen',
+          meta: meta || null,
+        });
+      }
+      return res.json({ ok: true });
+    }
+
     // ── Delete lab result ──
     if (req.body.deleteLabId && typeof req.body.deleteLabId === 'string') {
       const { error } = await supabase

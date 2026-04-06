@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useMAXBridge } from './useMAXBridge';
 import {
   authenticate, updateWater, deleteFood, addFood, addFoodPhoto, confirmFood,
-  logWeight, useStreakFreeze, activatePromo, updateAllergies, getReferralStats,
+  logWeight, useStreakFreeze, activatePromo, updateAllergies, getReferralStats, trackMiniappEvent,
   type AuthResponse, type ApiUser, type ApiLog, type ApiWeekDay, type ApiWeightEntry,
 } from '../lib/api';
 import type { UserProfile, FoodLog, VitaminData, WeekDay } from '../types';
@@ -203,6 +203,7 @@ export function useAppData() {
           if (r.ok) setReferralData({ link: r.link, total: r.total, activated: r.activated });
         }).catch(() => {});
         bridge.ready();
+        trackMiniappEvent(bridge.initData, 'miniapp_open');
       } catch (err: any) {
         console.error('[miniapp] Auth failed:', err);
         setError(err.message || 'Ошибка загрузки');

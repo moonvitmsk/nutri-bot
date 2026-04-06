@@ -347,6 +347,17 @@ export async function editProfile(
   return post('miniapp-water', { initData, editProfile: updates });
 }
 
+// ── Track user event (fire-and-forget) ──
+
+export function trackMiniappEvent(
+  initData: string,
+  event: string,
+  meta?: Record<string, unknown>,
+) {
+  // Fire and forget - don't await, don't block UI
+  post('miniapp-water', { initData, trackEvent: { event, category: 'screen', meta } }).catch(() => {});
+}
+
 // ── Delete lab result ──
 
 export async function deleteLabResult(

@@ -1,6 +1,6 @@
 import React, { useState, Suspense, useEffect } from 'react';
 import { useAppData, type AISubPage } from './hooks/useAppData';
-import { authenticate, confirmFood } from './lib/api';
+import { authenticate, confirmFood, trackMiniappEvent } from './lib/api';
 import DailyProgress from './components/DailyProgress';
 import VitaminChart from './components/VitaminChart';
 import FoodDiary from './components/FoodDiary';
@@ -351,6 +351,7 @@ export default function App() {
               setPage(p);
               if (p === 'ai') setAiSubPage('menu');
               bridge?.HapticFeedback?.selectionChanged();
+              if (initData) trackMiniappEvent(initData, `tab_${p}`);
             }}
           >
             <svg viewBox="0 0 24 24" fill="currentColor">

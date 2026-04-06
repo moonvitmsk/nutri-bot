@@ -2,6 +2,7 @@ import type { MaxUpdate, NutriUser } from '../max/types.js';
 import { findUserByMaxId, createUser, updateUser, setContextState } from '../db/users.js';
 import { sendMessage } from '../max/api.js';
 import { trackError } from '../services/error-tracker.js';
+import { trackEvent, trackCommand, trackFeature } from '../db/events.js';
 import { sanitizeDisplayName, sanitizeUserInput, sanitizePhone } from '../utils/sanitize.js';
 import { canUseFeature } from '../db/subscriptions.js';
 import { subscriptionInfo } from '../max/keyboard.js';
@@ -46,6 +47,7 @@ async function _routeUpdate(update: MaxUpdate): Promise<void> {
     if (!user) {
       user = await createUser(maxUser.user_id, chatId, userName);
     }
+    trackEvent(user.id, 'bot_started', 'action');
     await handleCommand(user, '/start', chatId);
     return;
   }
@@ -57,6 +59,7 @@ async function _routeUpdate(update: MaxUpdate): Promise<void> {
     if (!user) {
       user = await createUser(cb.user.user_id, update.chat_id || cb.user.user_id, cb.user.name ? sanitizeDisplayName(cb.user.name) : undefined);
     }
+    trackEvent(user.id, `callback_${cb.payload}`, 'action', { payload: cb.payload });
     await handleCallback(user, cb);
     return;
   }
@@ -70,8 +73,14 @@ async function _routeUpdate(update: MaxUpdate): Promise<void> {
       user = await createUser(msg.sender.user_id, chatId, msg.sender.name ? sanitizeDisplayName(msg.sender.name) : undefined);
     }
 
-    // Update last active
+    // Update last active + track message
     await updateUser(user.id, { last_active_at: new Date().toISOString() } as any);
+    const hasPhoto = !!msg.body.attachments?.find(a => a.type === 'image');
+    const hasAudio = !!msg.body.attachments?.find(a => a.type === 'audio');
+    const hasFile = !!msg.body.attachments?.find(a => a.type === 'file');
+    const hasContact = !!msg.body.attachments?.find(a => a.type === 'contact');
+    const msgType = hasPhoto ? 'photo' : hasAudio ? 'voice' : hasFile ? 'file' : hasContact ? 'contact' : 'text';
+    trackEvent(user.id, `msg_${msgType}`, 'action', { text_len: msg.body.text?.length || 0 });
 
     // Contact attachment? (phone sharing — onboarding or freemium upgrade)
     const contactAttachment = msg.body.attachments?.find(a => a.type === 'contact');

@@ -1,4 +1,4 @@
-import React, { useState, Suspense } from 'react';
+import React, { useState, Suspense, useEffect } from 'react';
 import { useAppData, type AISubPage } from './hooks/useAppData';
 import { authenticate, confirmFood } from './lib/api';
 import DailyProgress from './components/DailyProgress';
@@ -45,6 +45,16 @@ const labels: Record<Page, string> = {
 
 export default function App() {
   const [page, setPage] = useState<Page>('today');
+
+  // Restore saved display settings
+  useEffect(() => {
+    const font = localStorage.getItem('mv_font');
+    const zoom = localStorage.getItem('mv_zoom');
+    const theme = localStorage.getItem('mv_theme');
+    if (font) document.documentElement.style.fontSize = font + 'px';
+    if (zoom) document.body.style.zoom = zoom;
+    if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+  }, []);
 
   const {
     state, error, data,

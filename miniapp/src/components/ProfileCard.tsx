@@ -1,9 +1,8 @@
-// v0.8.4 — profile: water norm edit, goal edit, avatar upload, accessibility toggle
-import React, { useState, useCallback, useRef } from 'react';
+// v0.8.6 — profile: settings (font, zoom, theme), avatar fix, promo fix
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import type { UserProfile, WeightEntry } from '../types';
 import WeightTracker from './WeightTracker';
 import BadgeList from './BadgeList';
-import AccessibilityToggle from './AccessibilityToggle';
 import { editProfile, uploadAvatar } from '../lib/api';
 
 interface Props {
@@ -57,8 +56,29 @@ export default function ProfileCard({ user, weightHistory, onLogWeight, weightLo
   const avatarRef = useRef<HTMLInputElement>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
 
-  // Accessibility
-  const [largeFont, setLargeFont] = useState(() => document.body.classList.contains('accessibility-mode'));
+  // Settings: font size, zoom, theme
+  const [fontSize, setFontSize] = useState(() => parseInt(localStorage.getItem('mv_font') || '22'));
+  const [zoomLevel, setZoomLevel] = useState(() => parseFloat(localStorage.getItem('mv_zoom') || '1.15'));
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('mv_theme') !== 'light');
+
+  useEffect(() => {
+    document.documentElement.style.fontSize = fontSize + 'px';
+    localStorage.setItem('mv_font', String(fontSize));
+  }, [fontSize]);
+
+  useEffect(() => {
+    document.body.style.zoom = String(zoomLevel);
+    localStorage.setItem('mv_zoom', String(zoomLevel));
+  }, [zoomLevel]);
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
+    localStorage.setItem('mv_theme', darkMode ? 'dark' : 'light');
+  }, [darkMode]);
 
   const handlePromo = useCallback(async () => {
     if (!promoCode.trim() || !onActivatePromo) return;
@@ -450,12 +470,70 @@ export default function ProfileCard({ user, weightHistory, onLogWeight, weightLo
         ))}
       </div>
 
-      {/* Accessibility toggle */}
-      <div style={{ marginTop: 10 }}>
-        <AccessibilityToggle
-          enabled={largeFont}
-          onToggle={(v) => setLargeFont(v)}
-        />
+      {/* Settings: font, zoom, theme */}
+      <div className="card" style={{ padding: '16px 18px', marginTop: 10 }}>
+        <div className="section-title">Настройки</div>
+
+        {/* Font size slider */}
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+            <span style={{ fontSize: 13 }}>Размер шрифта</span>
+            <span style={{ fontSize: 12, fontFamily: "'JetBrains Mono', monospace", color: 'var(--accent-purple)' }}>{fontSize}px</span>
+          </div>
+          <input
+            type="range" min="16" max="28" step="1" value={fontSize}
+            onChange={e => setFontSize(Number(e.target.value))}
+            style={{ width: '100%', accentColor: 'var(--accent-purple)' }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-secondary)' }}>
+            <span>Мелкий</span><span>Крупный</span>
+          </div>
+        </div>
+
+        {/* Zoom slider */}
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+            <span style={{ fontSize: 13 }}>Масштаб</span>
+            <span style={{ fontSize: 12, fontFamily: "'JetBrains Mono', monospace", color: 'var(--accent-blue)' }}>{Math.round(zoomLevel * 100)}%</span>
+          </div>
+          <input
+            type="range" min="0.85" max="1.5" step="0.05" value={zoomLevel}
+            onChange={e => setZoomLevel(Number(e.target.value))}
+            style={{ width: '100%', accentColor: 'var(--accent-blue)' }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-secondary)' }}>
+            <span>85%</span><span>150%</span>
+          </div>
+        </div>
+
+        {/* Theme toggle */}
+        <div
+          onClick={() => setDarkMode(!darkMode)}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '12px 0', cursor: 'pointer',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 18 }}>{darkMode ? '🌙' : '☀️'}</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 500 }}>{darkMode ? 'Тёмная тема' : 'Светлая тема'}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Нажми для переключения</div>
+            </div>
+          </div>
+          <div style={{
+            width: 44, height: 24, borderRadius: 12,
+            background: darkMode ? 'var(--accent-purple)' : 'rgba(255,255,255,0.3)',
+            padding: 2, transition: 'background 0.3s', position: 'relative',
+          }}>
+            <div style={{
+              width: 20, height: 20, borderRadius: '50%',
+              background: '#fff',
+              transform: `translateX(${darkMode ? 20 : 0}px)`,
+              transition: 'transform 0.3s',
+            }} />
+          </div>
+        </div>
       </div>
 
       {/* Streak freeze */}
@@ -602,7 +680,7 @@ export default function ProfileCard({ user, weightHistory, onLogWeight, weightLo
       {onActivatePromo && (
         <div className="card" style={{ padding: '16px 18px', marginTop: 10 }}>
           <div className="section-title">Промо-код</div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <input
               value={promoCode}
               onChange={e => setPromoCode(e.target.value.toUpperCase())}
@@ -611,9 +689,9 @@ export default function ProfileCard({ user, weightHistory, onLogWeight, weightLo
               maxLength={30}
               disabled={promoLoading}
               style={{
-                flex: 1, background: 'rgba(255,255,255,0.04)',
+                width: '100%', background: 'rgba(255,255,255,0.04)',
                 border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10,
-                padding: '8px 12px', color: 'var(--text-primary)',
+                padding: '10px 12px', color: 'var(--text-primary)',
                 fontSize: 14, fontWeight: 600, fontFamily: "'JetBrains Mono', monospace",
                 letterSpacing: 1, outline: 'none', textTransform: 'uppercase',
               }}
@@ -623,7 +701,7 @@ export default function ProfileCard({ user, weightHistory, onLogWeight, weightLo
               disabled={!promoCode.trim() || promoLoading}
               className="btn-primary"
               style={{
-                padding: '8px 16px', flexShrink: 0,
+                width: '100%', padding: '10px 16px',
                 opacity: !promoCode.trim() || promoLoading ? 0.4 : 1,
               }}
             >

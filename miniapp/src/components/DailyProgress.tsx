@@ -61,10 +61,16 @@ export default function DailyProgress({
       {/* Solar System Hero */}
       <div className="card" style={{ marginBottom: 10, padding: '12px 8px 16px' }}>
         <div style={{
-          fontSize: 11, color: 'rgba(255,255,255,0.3)', textAlign: 'center',
-          letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          marginBottom: 4,
         }}>
-          Сегодня
+          <img src="/logo.png" alt="" style={{ width: 20, height: 20, borderRadius: '50%' }} />
+          <span style={{
+            fontSize: 11, color: 'rgba(255,255,255,0.3)',
+            letterSpacing: 1.5, textTransform: 'uppercase',
+          }}>
+            Сегодня
+          </span>
         </div>
         <SolarSystem
           calories={totals.calories} caloriesMax={target.calories}

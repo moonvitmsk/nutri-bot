@@ -33,22 +33,8 @@ export async function sendDailySummary(user: NutriUser, chatId: number): Promise
     ca += l.carbs || 0;
   }
 
-  // Generate animated GIF report card
-  let imageToken: string | null = null;
-  try {
-    const gifBuffer = await generateReportGif({
-      userName: user.name || 'Друг',
-      macros: {
-        calories: { current: cal, target: target.calories },
-        protein: { current: pro, target: target.protein },
-        fat: { current: fa, target: target.fat },
-        carbs: { current: ca, target: target.carbs },
-      },
-    });
-    imageToken = await uploadImage(gifBuffer, 'daily-report.gif');
-  } catch (err) {
-    await trackError('gif', `GIF generation error: ${err instanceof Error ? err.message : String(err)}`, { user_id: user.max_user_id });
-  }
+  // GIF report disabled — text only
+  const imageToken: string | null = null;
 
   const macroSummary = formatDaySummary(logs, target);
   const nutrients = await getTodayNutrients(user.id);

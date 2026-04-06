@@ -120,24 +120,9 @@ export async function handleRecipes(user: NutriUser, chatId: number, context?: s
         }));
       }
 
-      // Generate infographic card for first recipe
-      let cardSent = false;
-      try {
-        const cardPng = await generateRecipeCardPng(recipes[0]);
-        const imgToken = await uploadImage(cardPng, 'recipe.png');
-        if (imgToken) {
-          await sendMessageWithImage(chatId, `\u{1F373} ${recipes[0].name}`, imgToken);
-          cardSent = true;
-        }
-      } catch (err) {
-        console.error('RECIPE_CARD_ERROR:', err instanceof Error ? err.message : String(err));
-        await trackError('recipe', `Card generation error: ${err instanceof Error ? err.message : String(err)}`, { user_id: user.max_user_id });
-      }
-
-      // Send all recipes as copiable text
+      // Send all recipes as text
       const textVersion = formatRecipesText(recipes);
-      const prefix = cardSent ? 'Все 3 рецепта (для копирования):' : '';
-      const fullText = [prefix, textVersion].filter(Boolean).join('\n\n');
+      const fullText = textVersion;
       await saveMessage(user.id, 'assistant', fullText, tokens);
       await sendMessage(chatId, fullText, await mainMenu());
     } else {

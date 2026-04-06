@@ -43,33 +43,8 @@ export async function startOnboarding(user: NutriUser, chatId: number) {
     }
   }
 
-  // Send welcome card with greeting (falls back to text if card fails)
-  try {
-    // Priority 1: admin-configured image URL from settings
-    const welcomeImageUrl = await getSetting('config_welcome_image_url');
-    let token: string | null = null;
-
-    if (welcomeImageUrl) {
-      const { downloadImage } = await import('../max/api.js');
-      const imgBuf = await downloadImage(welcomeImageUrl);
-      token = await uploadImage(imgBuf, 'welcome.png');
-    } else {
-      // Priority 2: auto-generated SVG card
-      const { generateWelcomeCardPng } = await import('../services/welcome-card.js');
-      const cardPng = await generateWelcomeCardPng(user.name || undefined);
-      token = await uploadImage(cardPng, 'welcome.png');
-    }
-
-    if (token) {
-      await sendMessageWithImage(chatId, greeting, token);
-    } else {
-      await sendMessage(chatId, greeting);
-    }
-  } catch (err) {
-    const { trackError } = await import('../services/error-tracker.js');
-    await trackError('welcome_card', `Welcome card failed: ${err instanceof Error ? err.message : String(err)}`, { user_id: user.max_user_id });
-    await sendMessage(chatId, greeting);
-  }
+  // Send greeting as text (image cards disabled)
+  await sendMessage(chatId, greeting);
 
   // Contact request CTA (separate message with phone button)
   const phoneReq = await getMsg('onboarding_phone_request');

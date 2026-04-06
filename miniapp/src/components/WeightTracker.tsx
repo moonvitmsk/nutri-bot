@@ -97,6 +97,18 @@ export default function WeightTracker({ entries, currentWeight, onLogWeight, loa
         )}
       </div>
 
+      {/* Empty state CTA */}
+      {!chartData && entries.length < 2 && !showInput && (
+        <div style={{
+          textAlign: 'center', padding: '12px 0', marginBottom: 8,
+          fontSize: 12, color: 'var(--text-secondary)',
+        }}>
+          {entries.length === 0
+            ? 'Запиши первый вес, чтобы отслеживать прогресс'
+            : 'Ещё одно взвешивание - и появится график тренда'}
+        </div>
+      )}
+
       {/* SVG Chart */}
       {chartData && (
         <div style={{ marginBottom: 12 }}>

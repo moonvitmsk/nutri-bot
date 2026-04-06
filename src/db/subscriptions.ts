@@ -17,6 +17,18 @@ export function getSubscriptionStatus(user: NutriUser): 'free' | 'trial' | 'prem
   return 'free';
 }
 
+export function getTrialDaysRemaining(user: NutriUser): number | null {
+  if (user.subscription_type === 'trial' && user.trial_started_at) {
+    const trialEnd = new Date(user.trial_started_at);
+    trialEnd.setDate(trialEnd.getDate() + config.freeTrialDays);
+    return Math.max(0, Math.ceil((trialEnd.getTime() - Date.now()) / 86400000));
+  }
+  if (user.subscription_type === 'premium' && user.premium_until) {
+    return Math.max(0, Math.ceil((new Date(user.premium_until).getTime() - Date.now()) / 86400000));
+  }
+  return null;
+}
+
 // Photo limits: 8/day free, 15/day trial, 30/day premium
 const FREE_PHOTOS_PER_DAY = 8;
 

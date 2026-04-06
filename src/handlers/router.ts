@@ -3,6 +3,7 @@ import { findUserByMaxId, createUser, updateUser, setContextState } from '../db/
 import { sendMessage } from '../max/api.js';
 import { trackError } from '../services/error-tracker.js';
 import { trackEvent, trackCommand, trackFeature } from '../db/events.js';
+import { getTrialDaysRemaining } from '../db/subscriptions.js';
 import { sanitizeDisplayName, sanitizeUserInput, sanitizePhone } from '../utils/sanitize.js';
 import { canUseFeature } from '../db/subscriptions.js';
 import { subscriptionInfo } from '../max/keyboard.js';
@@ -75,6 +76,23 @@ async function _routeUpdate(update: MaxUpdate): Promise<void> {
 
     // Update last active + track message
     await updateUser(user.id, { last_active_at: new Date().toISOString() } as any);
+
+    // Trial/premium expiry warning (once per threshold)
+    const daysLeft = getTrialDaysRemaining(user);
+    if (daysLeft !== null && [7, 3, 1, 0].includes(daysLeft)) {
+      const warnKey = `trial_warn_${daysLeft}`;
+      if (!(user as any)[warnKey]) {
+        const warnings: Record<number, string> = {
+          7: `Напоминание: твоя подписка истекает через 7 дней. Используй промо-код или QR-код moonvit для продления.`,
+          3: `Осталось 3 дня подписки! После этого некоторые функции станут недоступны.`,
+          1: `Последний день подписки! Завтра глубокая консультация и анализы крови будут недоступны. /subscribe`,
+          0: `Подписка истекла. Базовые функции работают. Для полного доступа: /subscribe`,
+        };
+        if (warnings[daysLeft]) {
+          await sendMessage(chatId, warnings[daysLeft]);
+        }
+      }
+    }
     const hasPhoto = !!msg.body.attachments?.find(a => a.type === 'image');
     const hasAudio = !!msg.body.attachments?.find(a => a.type === 'audio');
     const hasFile = !!msg.body.attachments?.find(a => a.type === 'file');

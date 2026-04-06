@@ -103,11 +103,22 @@ export async function handleOnboardingStep(user: NutriUser, text: string, chatId
   const updates: Record<string, any> = {};
 
   switch (step) {
-    case 0:
-      // Step 0 = phone-first. User sent text instead of sharing phone — explain gently
-      await sendMessage(chatId, await getMsg('msg_phone_explain'));
-      await sendContactRequest(chatId, await getMsg('onboarding_phone_button'));
+    case 0: {
+      // Step 0 = phone-first. If user types text (not phone), check if they want to skip
+      const lower = text.trim().toLowerCase();
+      const skipWords = ['нет', 'не хочу', 'не буду', 'пропустить', 'skip', 'потом', 'позже', 'без телефона', 'дальше', 'продолжить', 'давай'];
+      if (skipWords.some(w => lower.includes(w))) {
+        // Treat as skip - proceed without phone
+        await updateUser(user.id, { onboarding_step: 1 } as any);
+        await sendMessage(chatId, 'Хорошо! Как тебя зовут?');
+        return;
+      }
+      // Otherwise re-explain
+      await sendMessage(chatId, 'Поделись номером для 30 дней Trial, или нажми кнопку "Пропустить" ниже.', [
+        [{ type: 'callback', text: 'Пропустить', payload: 'skip_phone' }],
+      ]);
       return;
+    }
 
     case 1: { // got name — validate
       const nameTrim = text.trim();

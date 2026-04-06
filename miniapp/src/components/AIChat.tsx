@@ -15,14 +15,14 @@ const GREETING: Message = { role: 'assistant', text: 'Привет! Я moonvit, 
 export default function AIChat({ initData }: Props) {
   const [messages, setMessages] = useState<Message[]>(() => {
     try {
-      const saved = sessionStorage.getItem('mv_chat');
+      const saved = localStorage.getItem('mv_chat');
       if (saved) return JSON.parse(saved);
     } catch { /* ignore */ }
     return [GREETING];
   });
 
   useEffect(() => {
-    try { sessionStorage.setItem('mv_chat', JSON.stringify(messages)); } catch { /* ignore */ }
+    try { localStorage.setItem('mv_chat', JSON.stringify(messages)); } catch { /* ignore */ }
   }, [messages]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);

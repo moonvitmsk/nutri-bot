@@ -114,9 +114,14 @@ export default function BadgeList(props: Props) {
             <img
               src={BADGE_ICONS[badge.id]}
               alt={badge.name}
+              width={40}
+              height={40}
+              loading="lazy"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               style={{
                 width: 40, height: 40, marginBottom: 4,
                 filter: badge.unlocked ? 'none' : 'grayscale(1) brightness(0.5)',
+                borderRadius: 10,
               }}
             />
             <div style={{ fontSize: 9, fontWeight: 600, textAlign: 'center', lineHeight: 1.2 }}>

@@ -1,13 +1,11 @@
-// C-5: Вечерний итог дня — КБЖУ + витамины с индикаторами + animated GIF
+// C-5: Вечерний итог дня — КБЖУ + витамины с индикаторами (text only)
 import type { NutriUser } from '../max/types.js';
-import { sendMessage, sendMessageWithImage, uploadImage } from '../max/api.js';
+import { sendMessage, sendMessageWithImage } from '../max/api.js';
 import { mainMenu } from '../max/keyboard.js';
 import { getTodayLogs } from '../db/food-logs.js';
 import { formatDaySummary } from '../utils/nutrition.js';
 import { getTodayNutrients, formatVitaminSummary } from '../services/vitamin-tracker.js';
 import { vitaminDisclaimer } from '../utils/formatter.js';
-import { generateReportGif } from '../services/report-image.js';
-import { trackError } from '../services/error-tracker.js';
 
 export async function sendDailySummary(user: NutriUser, chatId: number): Promise<void> {
   const logs = await getTodayLogs(user.id);

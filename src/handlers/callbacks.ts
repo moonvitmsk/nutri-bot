@@ -324,7 +324,6 @@ export async function handleCallback(user: NutriUser, cb: MaxCallback) {
       await setContextState(user.id, 'awaiting_mealplan_request');
       await sendMessage(chatId, await getMsg('msg_mealplan_custom_prompt'));
       break;
-      break;
 
     case 'cancel_food':
       await setContextState(user.id, 'idle');

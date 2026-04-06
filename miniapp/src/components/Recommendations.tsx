@@ -10,6 +10,7 @@ interface Tip {
   pct: number;
   foods: string;
   moonvit?: string;
+  desc?: string;
 }
 
 // Simple rule-based recommendations from deficit data
@@ -17,15 +18,15 @@ function computeTips(
   vitamins: Record<string, number>,
   norms: Record<string, { name: string; unit: string; daily: number }>,
 ): Tip[] {
-  const foodSources: Record<string, { foods: string; moonvit?: string }> = {
-    vitamin_a: { foods: 'Морковь, тыква, печень, яйца', moonvit: 'moonvit Vita' },
+  const foodSources: Record<string, { foods: string; moonvit?: string; desc?: string }> = {
+    vitamin_a: { foods: 'Морковь, тыква, печень, яйца', moonvit: 'moonvit Vita', desc: 'Мультивитамин A+E+C' },
     vitamin_c: { foods: 'Цитрусовые, киви, болгарский перец, капуста' },
-    vitamin_d: { foods: 'Жирная рыба, яйца, грибы', moonvit: 'moonvit Luna' },
+    vitamin_d: { foods: 'Жирная рыба, яйца, грибы', moonvit: 'moonvit Luna', desc: 'D3 + Ca + Mg для костей' },
     vitamin_e: { foods: 'Орехи, семена, авокадо, оливковое масло' },
     vitamin_b1: { foods: 'Свинина, крупы, бобовые, семечки' },
     vitamin_b2: { foods: 'Молочные продукты, яйца, миндаль' },
     vitamin_b6: { foods: 'Курица, картофель, бананы, нут' },
-    vitamin_b12: { foods: 'Мясо, рыба, яйца, молоко', moonvit: 'moonvit B-Complex' },
+    vitamin_b12: { foods: 'Мясо, рыба, яйца, молоко', moonvit: 'moonvit B-Complex', desc: 'Комплекс B1+B6+B12' },
     vitamin_b9: { foods: 'Листовая зелень, бобовые, цитрусовые' },
     iron: { foods: 'Красное мясо, гречка, шпинат, чечевица' },
     calcium: { foods: 'Молочные продукты, кунжут, брокколи', moonvit: 'moonvit Luna' },
@@ -45,6 +46,7 @@ function computeTips(
         pct,
         foods: src?.foods || 'Разнообразное питание',
         moonvit: src?.moonvit,
+        desc: src?.desc,
       });
     }
   }
@@ -101,10 +103,12 @@ export default function Recommendations({ vitamins, norms }: Props) {
                 fontSize: 9, fontWeight: 600,
                 color: 'var(--accent-purple)',
                 background: 'rgba(124,58,237,0.1)',
-                padding: '3px 7px', borderRadius: 6,
-                whiteSpace: 'nowrap', flexShrink: 0,
+                padding: '4px 8px', borderRadius: 8,
+                flexShrink: 0, textAlign: 'center',
+                lineHeight: 1.3,
               }}>
-                {tip.moonvit}
+                <div>{tip.moonvit}</div>
+                {tip.desc && <div style={{ fontSize: 8, fontWeight: 400, opacity: 0.7, marginTop: 1 }}>{tip.desc}</div>}
               </div>
             )}
           </div>

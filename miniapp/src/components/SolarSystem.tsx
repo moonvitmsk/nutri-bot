@@ -160,8 +160,11 @@ export default function SolarSystem({ calories, caloriesMax, protein, proteinMax
               }}>
                 {ring.label}
               </div>
-              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>
-                {labels[i]} {pct}%
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, marginTop: 1 }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: ring.color, flexShrink: 0 }} />
+                <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)' }}>
+                  {labels[i]} {pct}%
+                </span>
               </div>
             </div>
           );

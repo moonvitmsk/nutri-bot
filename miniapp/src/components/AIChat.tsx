@@ -10,10 +10,20 @@ interface Props {
   initData: string;
 }
 
+const GREETING: Message = { role: 'assistant', text: 'Привет! Я moonvit, твой AI-нутрициолог. Спроси меня о питании, витаминах, рецептах — что угодно.' };
+
 export default function AIChat({ initData }: Props) {
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', text: 'Привет! Я moonvit, твой AI-нутрициолог. Спроси меня о питании, витаминах, рецептах — что угодно.' },
-  ]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    try {
+      const saved = sessionStorage.getItem('mv_chat');
+      if (saved) return JSON.parse(saved);
+    } catch { /* ignore */ }
+    return [GREETING];
+  });
+
+  useEffect(() => {
+    try { sessionStorage.setItem('mv_chat', JSON.stringify(messages)); } catch { /* ignore */ }
+  }, [messages]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);

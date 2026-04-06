@@ -93,6 +93,12 @@ export default function FoodDiary({ logs, onSelect, onAddFood, onRepeatMeal, dai
                 {formatDate(date)}
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 11, color: dayTotal > dailyTarget ? 'var(--red)' : 'var(--text-secondary)',
+                }}>
+                  {dayTotal}/{dailyTarget}
+                </span>
                 <div className="progress-bar" style={{ width: 40, height: 3 }}>
                   <div className="progress-fill" style={{
                     width: `${Math.min(Math.round((dayTotal / dailyTarget) * 100), 100)}%`,

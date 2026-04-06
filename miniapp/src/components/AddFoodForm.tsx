@@ -70,7 +70,8 @@ export default function AddFoodForm({
     setEditedItems(prev => {
       const updated = [...prev];
       const item = { ...updated[index] };
-      const ratio = item._orig_weight_g > 0 ? newWeight / item._orig_weight_g : 1;
+      if (!item._orig_weight_g || item._orig_weight_g <= 0) { item.weight_g = newWeight; updated[index] = item; return updated; }
+      const ratio = newWeight / item._orig_weight_g;
       item.weight_g = newWeight;
       item.calories = Math.round(item._orig_calories * ratio);
       item.protein = Math.round(item._orig_protein * ratio * 10) / 10;

@@ -155,6 +155,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         streak_freeze_available: user.streak_freeze_available || 0,
         photos_today: user.photos_today || 0,
         avatar_url: user.avatar_url || null,
+        premium_until: user.premium_until || null,
       },
       logs: logs.map(l => ({
         id: l.id,

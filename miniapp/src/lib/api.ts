@@ -28,6 +28,7 @@ export interface ApiUser {
   streak_freeze_available: number;
   photos_today: number;
   avatar_url?: string | null;
+  premium_until?: string | null;
 }
 
 export interface ApiLog {

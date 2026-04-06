@@ -327,6 +327,7 @@ export default function App() {
             referralTotal={referralData?.total}
             referralActivated={referralData?.activated}
             initData={initData || undefined}
+            premiumUntil={(data.user as any).premium_until || null}
             onProfileUpdated={async () => {
               if (initData) {
                 try {

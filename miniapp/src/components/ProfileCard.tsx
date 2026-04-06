@@ -23,6 +23,7 @@ interface Props {
   referralActivated?: number;
   initData?: string;
   onProfileUpdated?: () => void;
+  premiumUntil?: string | null;
 }
 
 const GOALS: { key: string; label: string; icon: string }[] = [
@@ -37,7 +38,7 @@ const GOAL_TEXT: Record<string, string> = {
   gain: 'Набор массы',
 };
 
-export default function ProfileCard({ user, weightHistory, onLogWeight, weightLoading, streakFreezeAvailable, onUseStreakFreeze, totalLogs, waterGlasses, photosUsed, onActivatePromo, onUpdateAllergies, allergies = [], referralLink, referralTotal = 0, referralActivated = 0, initData, onProfileUpdated }: Props) {
+export default function ProfileCard({ user, weightHistory, onLogWeight, weightLoading, streakFreezeAvailable, onUseStreakFreeze, totalLogs, waterGlasses, photosUsed, onActivatePromo, onUpdateAllergies, allergies = [], referralLink, referralTotal = 0, referralActivated = 0, initData, onProfileUpdated, premiumUntil }: Props) {
   const [promoCode, setPromoCode] = useState('');
   const [promoMsg, setPromoMsg] = useState('');
   const [promoLoading, setPromoLoading] = useState(false);
@@ -250,6 +251,18 @@ export default function ProfileCard({ user, weightHistory, onLogWeight, weightLo
           }} />
           {subLabel[user.subscription_type] || user.subscription_type}
         </div>
+        {/* Subscription status with remaining days */}
+        {premiumUntil && (
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 6 }}>
+            {(() => {
+              const until = new Date(premiumUntil);
+              const days = Math.max(0, Math.ceil((until.getTime() - Date.now()) / 86400000));
+              if (days <= 0) return 'Подписка истекла';
+              if (days <= 3) return `&#9888; ${days} дн. осталось!`;
+              return `до ${until.toLocaleDateString('ru-RU')}`;
+            })()}
+          </div>
+        )}
       </div>
 
       {/* Stats grid */}

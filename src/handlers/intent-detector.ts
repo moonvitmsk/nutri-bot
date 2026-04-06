@@ -9,7 +9,7 @@ interface IntentRule {
 const INTENTS: IntentRule[] = [
   // deletedata must be before profile to avoid 'удали профиль' matching 'профил'
   {
-    patterns: [/удали.*данн/i, /забудь.*мен/i, /удали.*профил/i, /сброс/i],
+    patterns: [/удали\s+(все|мои)\s+данн/i, /забудь\s+мен/i, /удали\s+мой\s+профил/i, /^сброс$/i],
     action: 'deletedata',
   },
   {
@@ -37,7 +37,7 @@ const INTENTS: IntentRule[] = [
     action: 'profile',
   },
   {
-    patterns: [/вод[ауы]/i, /выпи[лть].*стакан/i, /стакан.*вод/i, /попить/i, /пить.*вод/i, /водичк/i],
+    patterns: [/\bвод[ауы]\b/i, /выпи[лть].*стакан/i, /стакан.*вод/i, /попить/i, /пить.*вод/i, /водичк/i, /^вода$/i],
     action: 'water',
   },
   {

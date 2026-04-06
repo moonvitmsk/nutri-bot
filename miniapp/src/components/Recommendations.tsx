@@ -51,7 +51,14 @@ function computeTips(
     }
   }
 
-  return tips.sort((a, b) => a.pct - b.pct).slice(0, 5);
+  // Limit moonvit product mentions to max 1 per screen (avoid ad feeling)
+  const sorted = tips.sort((a, b) => a.pct - b.pct).slice(0, 5);
+  let moonvitShown = false;
+  return sorted.map(tip => {
+    if (tip.moonvit && moonvitShown) return { ...tip, moonvit: undefined, desc: undefined };
+    if (tip.moonvit) moonvitShown = true;
+    return tip;
+  });
 }
 
 export default function Recommendations({ vitamins, norms }: Props) {

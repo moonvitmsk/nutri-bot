@@ -16,7 +16,7 @@ for (const envFile of ['.env.local', '.env']) {
   } catch { /* skip */ }
 }
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({ apiKey: process.argv[2] || process.env.OPENAI_API_KEY });
 
 const BADGES = [
   { id: 'streak-3', prompt: 'A cute cartoon comet with a trail of 3 fire sparks, cosmic space background with stars, chibi kawaii style, vibrant purple and orange colors, round icon badge design, dark background' },

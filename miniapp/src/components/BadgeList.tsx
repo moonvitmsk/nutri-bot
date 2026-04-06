@@ -19,14 +19,14 @@ interface Props {
 }
 
 const BADGE_ICONS: Record<string, string> = {
-  'streak-3': '/badges/streak-3.svg',
-  'streak-7': '/badges/streak-7.svg',
-  'streak-30': '/badges/streak-30.svg',
-  'meals-10': '/badges/meals-10.svg',
-  'meals-50': '/badges/meals-50.svg',
-  'water-day': '/badges/water-day.svg',
-  'photo-first': '/badges/photo-first.svg',
-  'photo-10': '/badges/photo-10.svg',
+  'streak-3': '/badges/streak-3.png',
+  'streak-7': '/badges/streak-7.png',
+  'streak-30': '/badges/streak-30.png',
+  'meals-10': '/badges/meals-10.png',
+  'meals-50': '/badges/meals-50.png',
+  'water-day': '/badges/water-day.png',
+  'photo-first': '/badges/photo-first.png',
+  'photo-10': '/badges/photo-10.png',
 };
 
 function computeBadges(props: Props): Badge[] {

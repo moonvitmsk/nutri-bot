@@ -320,7 +320,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({ ok: false, error: 'empty_pdf', comment: 'PDF пустой или не содержит текста. Попробуйте фото.' });
       }
 
+      const sex = auth.user.sex === 'female' ? 'женщина' : 'мужчина';
+      const userCtx = `ПРОФИЛЬ ПАЦИЕНТА: ${sex}, ${auth.user.age || '?'} лет, ${auth.user.weight_kg || '?'} кг.`;
+
       const LAB_PDF_PROMPT = `Проанализируй результаты анализов крови, извлечённые из PDF. Извлеки ключевые маркеры.
+
+${userCtx} Учти возраст и пол при интерпретации референсов.
 
 ## ФОРМАТ ОТВЕТА (JSON)
 {
@@ -328,7 +333,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     {"name": "Гемоглобин", "value": "125", "unit": "г/л", "reference": "120-160", "status": "normal"},
     {"name": "Витамин D (25-OH)", "value": "15", "unit": "нг/мл", "reference": "30-100", "status": "low"}
   ],
-  "interpretation": "Краткая интерпретация (2-3 предложения). Что в норме, что нет."
+  "interpretation": "Краткая интерпретация (2-3 предложения). Что в норме, что нет.",
+  "recommendations": "Что делать: питание, потом добавки"
 }
 
 ## STATUS
@@ -354,10 +360,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (jsonMatch) {
           const result = JSON.parse(jsonMatch[0]);
           markers = result.markers || [];
-          interpretation = result.interpretation || '';
+          interpretation = [result.interpretation, result.recommendations].filter(Boolean).join('\n\n');
+          if (result.see_doctor) interpretation += '\n\n⚠️ Рекомендуется обратиться к врачу.';
         }
       } catch {
-        interpretation = aiRaw;
+        // Don't show raw JSON to user
+        interpretation = 'Анализ завершён. Маркеры извлечены из PDF.';
       }
 
       const deficiencies = markers.filter((m: any) => m.status === 'low').map((m: any) => m.name);
@@ -380,7 +388,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (lab_photo.length > MAX_BASE64_LENGTH) {
         return res.status(413).json({ error: 'Image too large' });
       }
-      const { markers, interpretation } = await analyzeLabPhoto(lab_photo);
+      const { markers, interpretation } = await analyzeLabPhoto(lab_photo, {
+        sex: auth.user.sex, age: auth.user.age, weight_kg: auth.user.weight_kg,
+      });
 
       // Save lab results to DB
       const deficiencies = markers.filter(m => m.status === 'low').map(m => m.name);

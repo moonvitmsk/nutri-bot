@@ -1,11 +1,14 @@
-// v0.8.4 — vitamins page with unique colors, chemical formulas, "important first" filter
+// v0.8.7 — vitamins page with colors, formulas, filter, lab delete
 import React, { useState, useMemo } from 'react';
 import type { ApiNorm, ApiLabResult } from '../lib/api';
+import { deleteLabResult } from '../lib/api';
 
 interface Props {
   vitamins: Record<string, number>;
   norms: Record<string, ApiNorm>;
   labResults: ApiLabResult[];
+  initData?: string;
+  onLabDeleted?: () => void;
 }
 
 // Chemical formulas and unique colors per nutrient key
@@ -128,7 +131,8 @@ function NutrientRow({ nKey, name, amount, norm, unit }: {
   );
 }
 
-export default function VitaminsPage({ vitamins, norms, labResults }: Props) {
+export default function VitaminsPage({ vitamins, norms, labResults, initData, onLabDeleted }: Props) {
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>('important');
 
   const nutrientKeys = Object.keys(norms);
@@ -268,14 +272,37 @@ export default function VitaminsPage({ vitamins, norms, labResults }: Props) {
               padding: '10px 0',
               borderBottom: '1px solid rgba(255,255,255,0.04)',
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                 <span style={{ fontSize: 13, fontWeight: 500 }}>Анализ крови</span>
-                <span style={{
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 11, color: 'var(--text-secondary)',
-                }}>
-                  {new Date(lr.created_at).toLocaleDateString('ru-RU')}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: 11, color: 'var(--text-secondary)',
+                  }}>
+                    {new Date(lr.created_at).toLocaleDateString('ru-RU')}
+                  </span>
+                  {initData && (
+                    <button
+                      onClick={async () => {
+                        setDeletingId(lr.id);
+                        try {
+                          await deleteLabResult(initData, lr.id);
+                          onLabDeleted?.();
+                        } catch { /* ignore */ }
+                        setDeletingId(null);
+                      }}
+                      disabled={deletingId === lr.id}
+                      style={{
+                        background: 'none', border: 'none',
+                        color: deletingId === lr.id ? 'var(--text-secondary)' : 'var(--red)',
+                        fontSize: 14, cursor: 'pointer', padding: '2px 6px',
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      {deletingId === lr.id ? '...' : '×'}
+                    </button>
+                  )}
+                </div>
               </div>
               {lr.deficiencies.length > 0 && (
                 <div style={{ fontSize: 12, color: 'var(--yellow)' }}>

@@ -286,6 +286,15 @@ export default function App() {
             vitamins={data.today_vitamins}
             norms={data.norms}
             labResults={data.lab_results}
+            initData={initData || undefined}
+            onLabDeleted={async () => {
+              if (initData) {
+                try {
+                  const fresh = await authenticate(initData);
+                  setData(fresh);
+                } catch { /* ignore */ }
+              }
+            }}
           />
         )}
         {page === 'profile' && (

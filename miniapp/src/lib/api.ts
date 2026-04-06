@@ -346,6 +346,15 @@ export async function editProfile(
   return post('miniapp-water', { initData, editProfile: updates });
 }
 
+// ── Delete lab result ──
+
+export async function deleteLabResult(
+  initData: string,
+  labId: string,
+): Promise<{ ok: boolean }> {
+  return post('miniapp-water', { initData, deleteLabId: labId });
+}
+
 // ── Voice transcription (Whisper) ──
 
 export async function transcribeVoice(

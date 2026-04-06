@@ -35,23 +35,31 @@ export async function analyzeFoodPhoto(imageUrl: string): Promise<{ analysis: Fo
   return { analysis, text, tokens };
 }
 
-export async function analyzeLabPhoto(imageUrl: string): Promise<{ markers: LabAnalysis['markers']; interpretation: string; tokens: number }> {
-  const prompt = await getLabVisionPrompt();
+export async function analyzeLabPhoto(imageUrl: string, userProfile?: { sex?: string; age?: number; weight_kg?: number }): Promise<{ markers: LabAnalysis['markers']; interpretation: string; tokens: number }> {
+  let prompt = await getLabVisionPrompt();
+  if (userProfile) {
+    const sex = userProfile.sex === 'female' ? 'женщина' : 'мужчина';
+    prompt += `\n\nПРОФИЛЬ ПАЦИЕНТА: ${sex}, ${userProfile.age || '?'} лет, ${userProfile.weight_kg || '?'} кг. Учти возраст и пол при интерпретации референсов.`;
+  }
   const { text, tokens } = await visionAnalysis(prompt, imageUrl);
 
   let markers: LabAnalysis['markers'] = [];
+  let interpretation = '';
   try {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    const cleaned = text.replace(/```json?\s*/g, '').replace(/```/g, '').trim();
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
       markers = parsed.markers || [];
+      interpretation = [parsed.interpretation, parsed.recommendations].filter(Boolean).join('\n\n');
+      if (parsed.see_doctor) interpretation += '\n\n⚠️ Рекомендуется обратиться к врачу.';
     }
   } catch {
-    // couldn't parse JSON, treat entire response as interpretation
+    // couldn't parse JSON - extract text without JSON
+    interpretation = text.replace(/```json[\s\S]*?```/g, '').replace(/\{[\s\S]*\}/, '').trim();
   }
 
-  // Interpretation is everything after the JSON or the full text
-  const interpretation = text.replace(/```json[\s\S]*?```/g, '').replace(/\{[\s\S]*\}/, '').trim() || text;
+  if (!interpretation) interpretation = 'Анализ завершён. Маркеры извлечены.';
 
   return { markers, interpretation, tokens };
 }

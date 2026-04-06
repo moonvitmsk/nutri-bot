@@ -26,6 +26,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(429).json({ ok: false, error: 'Слишком много запросов. Подожди минуту.' });
     }
 
+    // ── Delete lab result ──
+    if (req.body.deleteLabId && typeof req.body.deleteLabId === 'string') {
+      const { error } = await supabase
+        .from('nutri_lab_results')
+        .delete()
+        .eq('id', req.body.deleteLabId)
+        .eq('user_id', auth.user.id);
+      if (error) return res.status(500).json({ ok: false, error: error.message });
+      return res.json({ ok: true });
+    }
+
     // ── Referral stats ──
     if (req.body.referralStats === true) {
       const stats = await getReferralStats(auth.user.id);

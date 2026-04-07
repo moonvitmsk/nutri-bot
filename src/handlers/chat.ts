@@ -75,7 +75,12 @@ async function applyProfileUpdate(user: NutriUser, change: ProfileChange, chatId
 }
 
 export async function handleChat(user: NutriUser, text: string, chatId: number) {
-  if (!canUseFeature(user, 'chat')) {
+  // P0 fix: answer the last question THEN show limit, instead of blocking without response
+  const atChatLimit = !canUseFeature(user, 'chat');
+  if (atChatLimit && user.messages_today > 0) {
+    // User already used some messages — this is their last one. Let it through but warn.
+    // The actual blocking happens below after the response.
+  } else if (atChatLimit) {
     await sendMessage(chatId, await featureLocked('chat_limit'));
     return;
   }
@@ -116,6 +121,16 @@ export async function handleChat(user: NutriUser, text: string, chatId: number) 
     const parts = splitMessage(reply);
     for (const part of parts) {
       await sendMessage(chatId, part);
+    }
+
+    // P0 fix: warn about approaching/reached limit AFTER answering
+    if (atChatLimit) {
+      await sendMessage(chatId, '⚠️ Лимит сообщений на сегодня исчерпан. Завтра всё обновится!\n\nДля безлимитного общения поделись номером → 30 дней Trial, или /subscribe');
+    } else {
+      const remaining = 15 - (user.messages_today + 1);
+      if (remaining === 3 || remaining === 1) {
+        await sendMessage(chatId, `_Осталось ${remaining} сообщений на сегодня_`);
+      }
     }
   } catch (err) {
     console.error('Chat error:', err);

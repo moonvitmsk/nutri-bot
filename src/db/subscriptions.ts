@@ -29,17 +29,24 @@ export function getTrialDaysRemaining(user: NutriUser): number | null {
   return null;
 }
 
-// Photo limits: 5/day free, 15/day trial, 30/day premium
-const FREE_PHOTOS_PER_DAY = 5;
+// Free tier: 5 photos TOTAL (not per day), then hard block → ask phone
+const FREE_PHOTOS_TOTAL = 5;
+
+/** Check if free user has exhausted their demo quota and must share phone */
+export function isFreeExhausted(user: NutriUser): boolean {
+  const sub = getSubscriptionStatus(user);
+  return sub === 'free' && ((user as any).free_analyses_used || 0) >= FREE_PHOTOS_TOTAL;
+}
 
 export function canUseFeature(user: NutriUser, feature: 'chat' | 'photo' | 'lab' | 'deepcheck'): boolean {
   const sub = getSubscriptionStatus(user);
+  // Free tier after 5 total photos: EVERYTHING blocked
+  if (sub === 'free' && isFreeExhausted(user)) return false;
   switch (feature) {
     case 'chat':
-      if (sub === 'free') return user.messages_today < config.limits.freeMessagesPerDay;
-      return true;
+      return true; // no daily limit for chat (blocked by isFreeExhausted above)
     case 'photo':
-      if (sub === 'free') return user.photos_today < FREE_PHOTOS_PER_DAY;
+      if (sub === 'free') return ((user as any).free_analyses_used || 0) < FREE_PHOTOS_TOTAL;
       if (sub === 'trial') return user.photos_today < config.limits.trialPhotosPerDay;
       return user.photos_today < config.limits.premiumPhotosPerDay;
     case 'lab':
@@ -51,14 +58,13 @@ export function canUseFeature(user: NutriUser, feature: 'chat' | 'photo' | 'lab'
 
 export function getPhotosRemaining(user: NutriUser): number {
   const sub = getSubscriptionStatus(user);
-  if (sub === 'free') return Math.max(0, FREE_PHOTOS_PER_DAY - user.photos_today);
+  if (sub === 'free') return Math.max(0, FREE_PHOTOS_TOTAL - ((user as any).free_analyses_used || 0));
   if (sub === 'trial') return Math.max(0, config.limits.trialPhotosPerDay - user.photos_today);
   return Math.max(0, config.limits.premiumPhotosPerDay - user.photos_today);
 }
 
 export function needsPhoneSharing(user: NutriUser): boolean {
-  const sub = getSubscriptionStatus(user);
-  return sub === 'free' && user.photos_today >= FREE_PHOTOS_PER_DAY;
+  return isFreeExhausted(user);
 }
 
 export async function activateQrCode(userId: string, qrCode: string): Promise<{ success: boolean; message: string }> {

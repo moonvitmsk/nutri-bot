@@ -3,7 +3,7 @@ import { sendMessage } from '../max/api.js';
 import { updateUser, deleteUserData, setContextState } from '../db/users.js';
 import { deleteUserMessages } from '../db/messages.js';
 import { getTodayLogs, getWeekLogs, getPrevWeekLogs } from '../db/food-logs.js';
-import { getSubscriptionStatus, canUseFeature, activatePromoCode } from '../db/subscriptions.js';
+import { getSubscriptionStatus, getTrialDaysRemaining, canUseFeature, activatePromoCode } from '../db/subscriptions.js';
 import { mainMenu, subscriptionInfo } from '../max/keyboard.js';
 import { formatMacros, formatDaySummary } from '../utils/nutrition.js';
 import { featureLocked, disclaimer } from '../utils/formatter.js';
@@ -173,23 +173,25 @@ export async function handleCommand(user: NutriUser, command: string, chatId: nu
 
     case '/subscribe': {
       const sub = getSubscriptionStatus(user);
-      if (sub === 'premium') {
-        await sendMessage(chatId, `У тебя Premium до ${new Date(user.premium_until!).toLocaleDateString('ru-RU')}.`);
+      if (sub === 'trial' || sub === 'premium') {
+        const daysLeft = getTrialDaysRemaining(user);
+        await sendMessage(chatId, `У тебя полный доступ${daysLeft ? ` (осталось ${daysLeft} дней)` : ''}. Пользуйся на здоровье!`, await mainMenu());
       } else {
-        // H-1: Show tariff plans
-        const remaining = sub === 'free' ? `\n\nТекущий: Бесплатный (${10 - ((user as any).free_analyses_used || 0)} анализов осталось)` : `\nТекущий: Trial`;
+        const used = (user as any).free_analyses_used || 0;
+        const remaining = Math.max(0, 5 - used);
         await sendMessage(chatId, [
-          'Тарифы Moonvit:',
+          'Поделись номером телефона — и получи полный бесплатный доступ:',
           '',
-          'Free — 10 анализов фото, AI-чат',
-          'Basic — шаринг телефона → 30 дней без лимитов',
-          'Premium — безлимит + анализы крови + deepcheck',
-          '',
-          'Как получить Premium:',
-          '- QR-код под крышкой Moonvit (30 дней)',
-          '- Промо-код: напиши /promo КОД',
-          remaining,
-        ].join('\n'), subscriptionInfo());
+          '- Безлимитные фото-анализы еды',
+          '- Рецепты под твои дефициты',
+          '- Планы питания',
+          '- Глубокие AI-консультации',
+          '- Разбор анализов крови',
+          '- Витаминный трекер',
+          remaining > 0 ? `\nОсталось ${remaining} бесплатных анализов. После этого — только с номером.` : '\nБесплатные анализы закончились.',
+        ].join('\n'));
+        const { sendContactRequest: scr } = await import('../max/api.js');
+        await scr(chatId, 'Нажми кнопку — это быстро и безопасно:');
       }
       break;
     }

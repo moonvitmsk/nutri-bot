@@ -12,14 +12,37 @@ import { trackError } from '../services/error-tracker.js';
 import { getMsg } from '../config/bot-messages.js';
 
 export async function handleFoodPhoto(user: NutriUser, chatId: number, imageUrl: string) {
-  if (!canUseFeature(user, 'photo')) {
-    // A-5 + A-6: If free limit exhausted, explain why + prompt phone sharing
-    if (needsPhoneSharing(user)) {
-      await sendMessage(chatId, await getMsg('msg_free_exhausted'));
-      await sendContactRequest(chatId, await getMsg('msg_free_exhausted_button'));
-      return;
+  const atLimit = !canUseFeature(user, 'photo');
+
+  if (atLimit) {
+    // P0 fix: still analyze the photo so user sees the result, but don't save to diary
+    sendMessage(chatId, 'Анализирую фото... (лимит исчерпан — результат будет показан, но не сохранён)').catch(() => {});
+    try {
+      const { analysis } = await analyzeFoodPhoto(imageUrl);
+      const items = analysis.items.map((i: any) =>
+        `- ${i.name} (~${i.portion_g}г): ${i.calories} ккал (Б${i.protein} Ж${i.fat} У${i.carbs})`
+      ).join('\n');
+      const total = analysis.total;
+      const previewMsg = [
+        'Распознано:',
+        items || '(не удалось распознать)',
+        '',
+        `Итого: ${total.calories} ккал | Б${total.protein} Ж${total.fat} У${total.carbs}`,
+        '',
+        '⚠️ Лимит фото-анализов исчерпан — запись не сохранена.',
+        needsPhoneSharing(user)
+          ? 'Поделись номером телефона → 30 дней без лимитов!'
+          : 'Используй /addfood для добавления текстом или продли подписку: /subscribe',
+      ].join('\n');
+      if (needsPhoneSharing(user)) {
+        await sendMessage(chatId, previewMsg);
+        await sendContactRequest(chatId, await getMsg('msg_free_exhausted_button'));
+      } else {
+        await sendMessage(chatId, previewMsg, await mainMenu());
+      }
+    } catch {
+      await sendMessage(chatId, await featureLocked('photo_limit'));
     }
-    await sendMessage(chatId, await featureLocked('photo_limit'));
     return;
   }
 
@@ -79,11 +102,21 @@ export async function handleFoodPhoto(user: NutriUser, chatId: number, imageUrl:
     }
     await updateUser(user.id, updates);
 
-    // Show remaining daily photo analyses
+    // Show remaining daily photo analyses + feature discovery hints
     let extra = '';
     const remaining = getPhotosRemaining({ ...user, photos_today: user.photos_today + 1 });
     if (remaining >= 0 && remaining <= 3) {
       extra = `\n\n_Осталось ${remaining} фото-анализов на сегодня_`;
+    }
+    // P1: Feature discovery hints — one per milestone, not every photo (v1.1.2 fix: hint overload)
+    const photoCount = user.photos_today + 1;
+    const totalPhotos = ((user as any).free_analyses_used || 0) + photoCount;
+    if (photoCount === 3 && totalPhotos <= 5) {
+      extra += '\n\n_Совет: попробуй /vitamins — посмотри какие витамины ты уже набрал сегодня!_';
+    } else if (photoCount === 5 && totalPhotos <= 10) {
+      extra += '\n\n_Совет: /recipes — подберу рецепты под твои дефициты и аллергии!_';
+    } else if (photoCount === 8 && totalPhotos <= 15) {
+      extra += '\n\n_Открой мини-приложение (/app) — там графики, бейджи и челленджи!_';
     }
     await sendMessage(chatId, truncate(msg + extra), confirmFood());
   } catch (err) {

@@ -13,7 +13,7 @@ export const config = {
   },
   webhookUrl: process.env.WEBHOOK_URL!,
   adminPassword: process.env.ADMIN_PASSWORD || 'moonvit2026',
-  freeTrialDays: parseInt(process.env.FREE_TRIAL_DAYS || '30'),
+  freeTrialDays: parseInt(process.env.FREE_TRIAL_DAYS || '300'),
   limits: {
     messageMaxLength: 3800,
     freeMessagesPerDay: 15,

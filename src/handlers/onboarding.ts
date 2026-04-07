@@ -51,12 +51,12 @@ export async function startOnboarding(user: NutriUser, chatId: number) {
   await sendContactRequest(chatId, [
     phoneReq,
     '',
-    '_Поделись номером для 30 дней Trial или нажми "Пропустить"._',
+    '_Поделись номером для бесплатного полного доступа или нажми "Пропустить" (5 анализов без номера)._',
     '_Продолжая, ты соглашаешься с обработкой данных. /deletedata — удалить.' + disclaimer() + '_',
   ].join('\n'));
   // Skip button as a separate message with inline keyboard
-  await sendMessage(chatId, 'Не хочешь делиться номером? Можно пропустить.', [
-    [{ type: 'callback', text: 'Пропустить, продолжить без Trial', payload: 'skip_phone' }],
+  await sendMessage(chatId, 'Не хочешь делиться номером? Можно пропустить (5 бесплатных анализов).', [
+    [{ type: 'callback', text: 'Пропустить (5 анализов)', payload: 'skip_phone' }],
   ]);
 }
 

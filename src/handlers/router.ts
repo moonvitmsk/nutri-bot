@@ -5,9 +5,10 @@ import { trackError } from '../services/error-tracker.js';
 import { trackEvent, trackCommand, trackFeature } from '../db/events.js';
 import { getTrialDaysRemaining } from '../db/subscriptions.js';
 import { sanitizeDisplayName, sanitizeUserInput, sanitizePhone } from '../utils/sanitize.js';
-import { canUseFeature } from '../db/subscriptions.js';
+import { canUseFeature, isFreeExhausted, getSubscriptionStatus } from '../db/subscriptions.js';
 import { subscriptionInfo } from '../max/keyboard.js';
 import { featureLocked } from '../utils/formatter.js';
+import { sendContactRequest } from '../max/api.js';
 import { handleCommand } from './commands.js';
 import { handleCallback } from './callbacks.js';
 import { handleOnboardingStep, transitionAfterWow, handlePhoneFirst, handlePhoneContact, handleProfileEdit } from './onboarding.js';
@@ -76,6 +77,34 @@ async function _routeUpdate(update: MaxUpdate): Promise<void> {
 
     // Update last active + track message
     await updateUser(user.id, { last_active_at: new Date().toISOString() } as any);
+
+    // Hard block: free tier exhausted (5 total photos used, no phone shared)
+    // Only allow /start, /help, /deletedata, and contact sharing
+    if (user.onboarding_completed && isFreeExhausted(user)) {
+      const hasContact = !!msg.body.attachments?.find(a => a.type === 'contact');
+      const rawText = msg.body.text?.trim() || '';
+      const isAllowedCmd = ['/start', '/help', '/deletedata'].includes(rawText.split(' ')[0]?.toLowerCase());
+      if (hasContact) {
+        // Let contact sharing through (phone activation)
+      } else if (isAllowedCmd) {
+        // Let these commands through
+      } else {
+        await sendMessage(chatId, [
+          'Бесплатные анализы закончились!',
+          '',
+          'Поделись номером телефона — и получи полный доступ бесплатно:',
+          '- Безлимитные фото-анализы',
+          '- Рецепты, планы питания',
+          '- Глубокие консультации AI',
+          '- Разбор анализов крови',
+          '- Витаминный трекер',
+          '',
+          'Нажми кнопку ниже:',
+        ].join('\n'));
+        await sendContactRequest(chatId, 'Поделись номером для активации:');
+        return;
+      }
+    }
 
     // Trial/premium expiry warning (once per threshold)
     const daysLeft = getTrialDaysRemaining(user);
